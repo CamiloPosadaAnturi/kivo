@@ -1,0 +1,9 @@
+<h1>{{ company_name }}</h1>
+
+{% if user.is_authenticated %}
+    <a href="{% url 'dashboard' %}">Log in</a>
+    {% else %}
+    <a href="{% url 'login' %}">Log in</a>
+    {% endif %}
+
+<a href="https://wa.me/{{ 3206667421 }}" target="_blank">contactate con nosotros</a>
