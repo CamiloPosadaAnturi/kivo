@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bank Accounts</title>
+</head>
+<body>
+    <h1>Bank Accounts</h1>
+    <a href="{% url 'bankaccount_create' %}">+ New Account</a>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Bank</th>
+                <th>Account Number</th>
+                <th>Opening Balance</th>
+                <th>Current Balance</th>
+                <th>Created</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for account in bank_accounts %}
+            <tr>
+                <td>{{ account.bank_name }}</td>
+                <td>{{ account.account_number }}</td>
+                <td>{{ account.opening_balance }}</td>
+                <td>{{ account.current_balance }}</td>
+                <td>{{ account.created_at|date:"Y-m-d" }}</td>
+                <td><a href="{% url 'bankaccount_detail' account.pk %}">View</a></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No bank accounts found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</body>
+</html>

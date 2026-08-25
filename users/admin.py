@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin
-from .models import User, Company
+from .models import User, Company, Business
 
 
 @admin.register(Company)
@@ -9,13 +9,20 @@ class CompanyAdmin(admin.ModelAdmin):
     search_fields = ('name', 'tax_id')
 
 
+@admin.register(Business)
+class BusinessAdmin(admin.ModelAdmin):
+    list_display = ('name', 'company', 'is_active', 'created_at')
+    list_filter = ('company', 'is_active')
+    search_fields = ('name',)
+
+
 @admin.register(User)
 class CustomUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
-        ('Business data', {'fields': ('company', 'role', 'phone')}),
+        ('Business data', {'fields': ('company', 'business', 'role', 'phone')}),
     )
     add_fieldsets = UserAdmin.add_fieldsets + (
-        ('Business data', {'fields': ('company', 'role', 'phone')}),
+        ('Business data', {'fields': ('company', 'business', 'role', 'phone')}),
     )
-    list_display = ('username', 'email', 'company', 'role', 'is_active')
-    list_filter = ('company', 'role', 'is_active')
+    list_display = ('username', 'email', 'company', 'business', 'role', 'is_active')
+    list_filter = ('company', 'business', 'role', 'is_active')

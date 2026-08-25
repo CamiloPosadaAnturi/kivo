@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ bank_account.bank_name }} - {{ bank_account.account_number }}</title>
+</head>
+<body>
+    <h1>{{ bank_account.bank_name }} - {{ bank_account.account_number }}</h1>
+
+    <p><strong>Opening Balance:</strong> {{ bank_account.opening_balance }}</p>
+    <p><strong>Current Balance:</strong> {{ bank_account.current_balance }}</p>
+
+    <h2>Movement History</h2>
+
+    <table border="1">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Type</th>
+                <th>Category</th>
+                <th>Amount</th>
+                <th>Payment Method</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in transactions %}
+            <tr>
+                <td>{{ t.date }}</td>
+                <td>{{ t.get_type_display }}</td>
+                <td>{{ t.category }}</td>
+                <td>{{ t.amount }}</td>
+                <td>{{ t.get_payment_method_display }}</td>
+                <td>{{ t.description }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="6">No movements for this account.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{% url 'bankaccount_list' %}">Back to list</a>
+</body>
+</html>
