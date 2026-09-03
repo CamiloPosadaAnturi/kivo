@@ -1,0 +1,389 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Gastos{% endblock %}
+
+{% block extra_css %}
+<style>
+    .filter-input { transition: all 0.3s ease; }
+    .filter-input:focus { border-color: #dc2626; box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.1); }
+    .table-row { transition: all 0.2s ease; }
+    .table-row:hover { background: #fef2f2; }
+    .day-header { background: linear-gradient(135deg, #fef2f2 0%, #fecaca 100%); }
+    .modal-overlay { opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+    .modal-overlay.active { opacity: 1; visibility: visible; }
+    .modal-content { transform: translateY(20px) scale(0.95); transition: all 0.3s ease; }
+    .modal-overlay.active .modal-content { transform: translateY(0) scale(1); }
+    .badge-cash { background: rgba(107, 114, 128, 0.1); color: #374151; }
+    .badge-transfer { background: rgba(0, 70, 113, 0.1); color: #004671; }
+    .badge-card { background: rgba(139, 92, 246, 0.1); color: #7c3aed; }
+    .payment-method-btn { transition: all 0.3s ease; border: 2px solid #e5e7eb; background: white; }
+    .payment-method-btn.selected { border-color: #dc2626; background: rgba(220, 38, 38, 0.05); color: #dc2626; }
+    .bank-account-section { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; opacity: 0; }
+    .bank-account-section.visible { max-height: 200px; opacity: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-kivo-oscuro">
+                <i class="fas fa-arrow-down text-red-500 mr-2"></i>Gastos
+            </h1>
+            <p class="text-kivo-gris mt-1">Gestiona todos los gastos de tu negocio.</p>
+        </div>
+        <button onclick="openModal()"
+                class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl flex items-center gap-2 whitespace-nowrap transition-all shadow-sm hover:shadow-md">
+            <i class="fas fa-plus"></i> Nuevo gasto
+        </button>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-white rounded-2xl p-5 border border-red-200/50 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-kivo-gris font-medium">Gastos totales</p>
+                    <p class="text-2xl font-bold text-red-500 mt-1">${{ total|floatformat:0 }}</p>
+                </div>
+                <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-arrow-down text-red-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-kivo-gris font-medium">Registros</p>
+                    <p class="text-2xl font-bold text-kivo-oscuro mt-1">{{ count }}</p>
+                </div>
+                <div class="w-12 h-12 bg-kivo-azul-claro/30 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-list text-kivo-petroleo text-xl"></i>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm text-kivo-gris font-medium">Último gasto</p>
+                    <p class="text-2xl font-bold text-kivo-oscuro mt-1">
+                        {% if grouped_transactions %}{% for date, txs in grouped_transactions.items %}{% if forloop.first %}{{ txs.0.date|date:"d/m/Y" }}{% endif %}{% endfor %}{% else %}-{% endif %}
+                    </p>
+                </div>
+                <div class="w-12 h-12 bg-red-50 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-calendar text-red-500 text-xl"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <button type="button" onclick="toggleFilters()"
+                class="w-full px-6 py-4 flex items-center justify-between text-left hover:bg-gray-50 transition-colors">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-filter text-red-600"></i>
+                </div>
+                <div>
+                    <p class="font-semibold text-kivo-oscuro">Filtros</p>
+                    <p class="text-sm text-kivo-gris" id="filterCount">Sin filtros aplicados</p>
+                </div>
+            </div>
+            <i class="fas fa-chevron-down text-kivo-gris transition-transform" id="filterChevron"></i>
+        </button>
+        <div id="filtersPanel" class="hidden border-t border-gray-100">
+            <form method="get" class="p-6">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-kivo-gris mb-1.5 uppercase tracking-wide">Fecha desde</label>
+                        <input type="date" name="date_from" value="{{ request.GET.date_from }}"
+                               class="filter-input w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-kivo-gris mb-1.5 uppercase tracking-wide">Fecha hasta</label>
+                        <input type="date" name="date_to" value="{{ request.GET.date_to }}"
+                               class="filter-input w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-kivo-gris mb-1.5 uppercase tracking-wide">Categoría</label>
+                        <select name="category" class="filter-input w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none">
+                            <option value="">Todas</option>
+                            {% for cat in all_categories %}
+                            <option value="{{ cat.pk }}" {% if request.GET.category == cat.pk|stringformat:"d" %}selected{% endif %}>{{ cat.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-kivo-gris mb-1.5 uppercase tracking-wide">Método de pago</label>
+                        <select name="payment_method" class="filter-input w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none">
+                            <option value="">Todos</option>
+                            <option value="cash" {% if request.GET.payment_method == 'cash' %}selected{% endif %}>Efectivo</option>
+                            <option value="transfer" {% if request.GET.payment_method == 'transfer' %}selected{% endif %}>Transferencia</option>
+                            <option value="card" {% if request.GET.payment_method == 'card' %}selected{% endif %}>Tarjeta</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-kivo-gris mb-1.5 uppercase tracking-wide">Cuenta bancaria</label>
+                        <select name="bank_account" class="filter-input w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none">
+                            <option value="">Todas</option>
+                            {% for account in all_bank_accounts %}
+                            <option value="{{ account.pk }}" {% if request.GET.bank_account == account.pk|stringformat:"d" %}selected{% endif %}>{{ account.bank_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-3 mt-6 pt-4 border-t border-gray-100">
+                    <button type="submit" class="px-6 py-2.5 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 text-sm transition-all">
+                        <i class="fas fa-search"></i> Filtrar
+                    </button>
+                    <a href="{% url 'expenses:expense_list' %}"
+                       class="px-6 py-2.5 border-2 border-gray-200 text-kivo-gris font-semibold rounded-xl hover:border-kivo-gris hover:text-kivo-oscuro transition-all text-sm text-center flex items-center justify-center gap-2">
+                        <i class="fas fa-times"></i> Limpiar filtros
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        {% if grouped_transactions %}
+        <div class="overflow-x-auto">
+            {% for date, txs in grouped_transactions.items %}
+            <div class="border-b border-gray-100 last:border-b-0">
+                <div class="day-header px-6 py-3 flex items-center justify-between sticky top-0 z-10">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-calendar-day text-white text-xs"></i>
+                        </div>
+                        <span class="font-bold text-kivo-oscuro">{{ date|date:"l d \d\e F \d\e Y" }}</span>
+                    </div>
+                    <span class="text-sm font-semibold text-red-600">{{ txs|length }} movimiento{{ txs|length|pluralize }}</span>
+                </div>
+                <table class="w-full">
+                    <thead>
+                        <tr class="bg-gray-50/50 border-b border-gray-100">
+                            <th class="px-6 py-2 text-left text-xs font-semibold text-kivo-gris uppercase tracking-wider">Categoría</th>
+                            <th class="px-6 py-2 text-left text-xs font-semibold text-kivo-gris uppercase tracking-wider">Descripción</th>
+                            <th class="px-6 py-2 text-left text-xs font-semibold text-kivo-gris uppercase tracking-wider">Método</th>
+                            <th class="px-6 py-2 text-left text-xs font-semibold text-kivo-gris uppercase tracking-wider">Cuenta</th>
+                            <th class="px-6 py-2 text-right text-xs font-semibold text-kivo-gris uppercase tracking-wider">Monto</th>
+                            <th class="px-6 py-2 text-center text-xs font-semibold text-kivo-gris uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for tx in txs %}
+                        <tr class="table-row">
+                            <td class="px-6 py-3 text-sm font-medium text-kivo-oscuro">{{ tx.category.name }}</td>
+                            <td class="px-6 py-3 text-sm text-kivo-pizarra max-w-xs truncate">{{ tx.description|default:"-" }}</td>
+                            <td class="px-6 py-3 whitespace-nowrap">
+                                <span class="inline-flex items-center px-2 py-1 rounded-lg text-xs font-medium
+                                    {% if tx.payment_method == 'cash' %}badge-cash
+                                    {% elif tx.payment_method == 'transfer' %}badge-transfer
+                                    {% else %}badge-card{% endif %}">
+                                    {% if tx.payment_method == 'cash' %}<i class="fas fa-money-bill-wave mr-1"></i> Efectivo
+                                    {% elif tx.payment_method == 'transfer' %}<i class="fas fa-university mr-1"></i> Transferencia
+                                    {% else %}<i class="fas fa-credit-card mr-1"></i> Tarjeta{% endif %}
+                                </span>
+                            </td>
+                            <td class="px-6 py-3 text-sm text-kivo-pizarra">{% if tx.bank_account %}{{ tx.bank_account.bank_name }}{% else %}<span class="text-gray-400">-</span>{% endif %}</td>
+                            <td class="px-6 py-3 whitespace-nowrap text-right">
+                                <span class="text-sm font-bold text-red-500">-${{ tx.amount|floatformat:0 }}</span>
+                            </td>
+                            <td class="px-6 py-3 whitespace-nowrap text-center">
+                                <div class="flex items-center justify-center gap-1">
+                                    <a href="{% url 'expenses:expense_detail' tx.pk %}" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all" title="Ver"><i class="fas fa-eye text-sm"></i></a>
+                                    <a href="{% url 'expenses:expense_update' tx.pk %}" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all" title="Editar"><i class="fas fa-edit text-sm"></i></a>
+                                    <a href="{% url 'expenses:expense_delete' tx.pk %}" class="p-2 text-kivo-gris hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Eliminar"><i class="fas fa-trash text-sm"></i></a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if is_paginated %}
+        <div class="px-6 py-4 border-t border-gray-100 flex items-center justify-between">
+            <p class="text-sm text-kivo-gris">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} ({{ count }} en total)</p>
+            <div class="flex items-center gap-2">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   class="px-4 py-2 border-2 border-gray-200 text-kivo-gris font-semibold rounded-xl hover:border-red-500 hover:text-red-600 transition-all text-sm">
+                    <i class="fas fa-chevron-left mr-1"></i> Anterior
+                </a>
+                {% endif %}
+                <div class="flex items-center gap-1">
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <span class="px-3 py-2 bg-red-500 text-white font-semibold rounded-xl text-sm">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <a href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                       class="px-3 py-2 border-2 border-gray-200 text-kivo-gris font-semibold rounded-xl hover:border-red-500 hover:text-red-600 transition-all text-sm">{{ num }}</a>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}"
+                   class="px-4 py-2 border-2 border-gray-200 text-kivo-gris font-semibold rounded-xl hover:border-red-500 hover:text-red-600 transition-all text-sm">
+                    Siguiente <i class="fas fa-chevron-right ml-1"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="p-12 text-center">
+            <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <i class="fas fa-arrow-down text-3xl text-red-500"></i>
+            </div>
+            <h3 class="text-xl font-bold text-kivo-oscuro mb-2">Aún no hay gastos</h3>
+            <p class="text-kivo-gris mb-6 max-w-md mx-auto">
+                {% if request.GET %}Ningún gasto coincide con los filtros seleccionados.{% else %}Empieza registrando tu primer gasto.{% endif %}
+            </p>
+            {% if request.GET %}
+            <a href="{% url 'expenses:expense_list' %}" class="inline-flex items-center gap-2 px-6 py-3 border-2 border-gray-200 text-kivo-gris font-semibold rounded-xl hover:border-kivo-petroleo hover:text-kivo-petroleo transition-all">
+                <i class="fas fa-times"></i> Limpiar filtros
+            </a>
+            {% else %}
+            <button onclick="openModal()" class="inline-flex items-center gap-2 px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl transition-all">
+                <i class="fas fa-plus"></i> Nuevo gasto
+            </button>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div id="createModal" class="modal-overlay fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+    <div class="modal-content bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div class="p-6 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="text-xl font-bold text-kivo-oscuro"><i class="fas fa-minus-circle text-red-500 mr-2"></i>Nuevo gasto</h2>
+            <button onclick="closeModal()" class="w-10 h-10 flex items-center justify-center rounded-xl hover:bg-gray-100 transition-colors text-kivo-gris"><i class="fas fa-times text-lg"></i></button>
+        </div>
+        <form method="post" id="expenseForm" onsubmit="submitModal(event)">
+            {% csrf_token %}
+            <div class="p-6 space-y-5">
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-tag mr-2 text-kivo-gris"></i>Categoría</label>
+                    <select name="category" id="modalCategorySelect" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all focus:border-red-500" required>
+                        <option value="">Selecciona una categoría</option>
+                        {% for category in categories_for_modal %}
+                        <option value="{{ category.pk }}">{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-dollar-sign mr-2 text-kivo-gris"></i>Monto</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-kivo-gris font-medium">$</span>
+                        <input type="number" name="amount" id="modalAmount" step="1" min="0" inputmode="numeric" pattern="[0-9]*" placeholder="0" required
+                               class="w-full pl-8 pr-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro font-semibold text-lg focus:outline-none transition-all focus:border-red-500">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-3"><i class="fas fa-credit-card mr-2 text-kivo-gris"></i>Método de pago</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button type="button" class="payment-method-btn py-3 px-4 rounded-xl font-medium text-sm flex flex-col items-center gap-2" data-method="cash" onclick="selectPaymentMethod('cash')">
+                            <i class="fas fa-money-bill-wave text-lg"></i> Efectivo
+                        </button>
+                        <button type="button" class="payment-method-btn py-3 px-4 rounded-xl font-medium text-sm flex flex-col items-center gap-2" data-method="transfer" onclick="selectPaymentMethod('transfer')">
+                            <i class="fas fa-university text-lg"></i> Transferencia
+                        </button>
+                        <button type="button" class="payment-method-btn py-3 px-4 rounded-xl font-medium text-sm flex flex-col items-center gap-2" data-method="card" onclick="selectPaymentMethod('card')">
+                            <i class="fas fa-credit-card text-lg"></i> Tarjeta
+                        </button>
+                    </div>
+                    <input type="hidden" name="payment_method" id="modalPaymentMethod" value="cash">
+                </div>
+                <div id="modalBankSection" class="bank-account-section">
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-university mr-2 text-kivo-gris"></i>Cuenta bancaria</label>
+                    <select name="bank_account" id="modalBankSelect" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all focus:border-red-500">
+                        <option value="">Selecciona una cuenta</option>
+                        {% for account in bank_accounts_for_modal %}
+                        <option value="{{ account.pk }}">{{ account.bank_name }} - {{ account.account_number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-calendar mr-2 text-kivo-gris"></i>Fecha</label>
+                    <input type="date" name="date" id="modalDate" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all focus:border-red-500" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-align-left mr-2 text-kivo-gris"></i>Descripción</label>
+                    <textarea name="description" rows="2" maxlength="200" placeholder="Breve descripción..." class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all focus:border-red-500 resize-none"></textarea>
+                    <p class="text-xs text-kivo-gris mt-1">Opcional. Máximo 200 caracteres.</p>
+                </div>
+            </div>
+            <div id="formErrors" class="mx-6 mb-4 p-4 bg-red-50 border border-red-200 rounded-xl hidden">
+                <div class="flex items-center gap-2 text-red-600"><i class="fas fa-exclamation-circle"></i><span class="font-medium">Error al guardar:</span></div>
+                <ul id="formErrorsList" class="mt-2 text-sm text-red-600 list-disc list-inside"></ul>
+            </div>
+            <div class="p-6 bg-gray-50 border-t border-gray-100 flex gap-4 justify-end">
+                <button type="button" onclick="closeModal()" class="px-6 py-3 border-2 border-gray-200 text-kivo-gris font-semibold rounded-xl hover:border-kivo-gris hover:text-kivo-oscuro transition-all">Cancelar</button>
+                <button type="submit" id="submitBtn" class="px-8 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl flex items-center justify-center gap-2 transition-all"><i class="fas fa-check"></i> Guardar gasto</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleFilters() {
+    document.getElementById('filtersPanel').classList.toggle('hidden');
+    document.getElementById('filterChevron').classList.toggle('rotate-180');
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const params = new URLSearchParams(window.location.search);
+    let count = 0;
+    ['date_from', 'date_to', 'category', 'payment_method', 'bank_account'].forEach(p => { if (params.get(p)) count++; });
+    if (count > 0) {
+        document.getElementById('filterCount').textContent = `${count} filtro${count > 1 ? 's' : ''} aplicado${count > 1 ? 's' : ''}`;
+        document.getElementById('filterCount').classList.add('text-red-600', 'font-semibold');
+        document.getElementById('filtersPanel').classList.remove('hidden');
+        document.getElementById('filterChevron').classList.add('rotate-180');
+    }
+});
+function openModal() {
+    document.getElementById('createModal').classList.add('active');
+    document.getElementById('modalDate').value = new Date().toISOString().split('T')[0];
+}
+function closeModal() {
+    document.getElementById('createModal').classList.remove('active');
+    document.getElementById('formErrors').classList.add('hidden');
+    document.getElementById('formErrorsList').innerHTML = '';
+}
+function selectPaymentMethod(method) {
+    document.getElementById('modalPaymentMethod').value = method;
+    document.querySelectorAll('.payment-method-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector(`[data-method="${method}"]`).classList.add('selected');
+    const bankSection = document.getElementById('modalBankSection');
+    if (method === 'transfer') { bankSection.classList.add('visible'); } else { bankSection.classList.remove('visible'); document.getElementById('modalBankSelect').value = ''; }
+}
+async function submitModal(e) {
+    e.preventDefault();
+    const form = document.getElementById('expenseForm');
+    const formData = new FormData(form);
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    try {
+        const response = await fetch('{% url "expenses:expense_create_ajax" %}', { method: 'POST', body: formData });
+        const data = await response.json();
+        if (data.success) { closeModal(); window.location.reload(); } else {
+            const errorsList = document.getElementById('formErrorsList');
+            errorsList.innerHTML = '';
+            for (const [field, errors] of Object.entries(data.errors)) { errors.forEach(err => { const li = document.createElement('li'); li.textContent = err; errorsList.appendChild(li); }); }
+            document.getElementById('formErrors').classList.remove('hidden');
+        }
+    } catch (err) { console.error(err); } finally { submitBtn.disabled = false; submitBtn.innerHTML = '<i class="fas fa-check"></i> Guardar gasto'; }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.getElementById('modalAmount');
+    if (amountInput) { amountInput.addEventListener('input', function() { this.value = this.value.replace(/[^0-9]/g, ''); }); }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% load static %}
+<aside id="sidebar" class="fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-kivo-azul-claro/50 shadow-sm z-40 transition-all duration-300 lg:translate-x-0 -translate-x-full" style="overflow-y: auto; overflow-x: hidden;">
+    <div class="p-4">
+        <!-- User Info -->
+        <div class="mb-6 p-4 bg-kivo-menta rounded-xl sidebar-content">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-kivo-petroleo rounded-full flex items-center justify-center shrink-0">
+                    <i class="fas fa-user text-white text-sm"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <p class="text-sm font-bold text-kivo-oscuro truncate">{{ user.username }}</p>
+                    <p class="text-xs text-kivo-gris truncate">
+                        {% if user.business %}{{ user.business.name }}{% else %}Kivo{% endif %}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="space-y-1">
+
+            <!-- Principal -->
+            <button type="button" class="sidebar-section-toggle w-full flex items-center justify-between px-3 mb-2" data-target="section-principal">
+                <span class="text-xs font-semibold text-kivo-gris uppercase tracking-wider">Principal</span>
+                <i class="fas fa-chevron-down text-[10px] text-kivo-gris/60 transition-transform"></i>
+            </button>
+            <div id="section-principal" class="sidebar-section space-y-1">
+                <a href="{% url 'dashboard' %}"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-pizarra {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {% if request.resolver_match.url_name == 'dashboard' %}bg-kivo-petroleo text-white{% else %}bg-kivo-azul-claro/50 text-kivo-petroleo{% endif %}">
+                        <i class="fas fa-home text-sm"></i>
+                    </div>
+                    Dashboard
+                </a>
+            </div>
+
+            <!-- Finanzas -->
+            <button type="button" class="sidebar-section-toggle w-full flex items-center justify-between px-3 mb-2 mt-6" data-target="section-finanzas">
+                <span class="text-xs font-semibold text-kivo-gris uppercase tracking-wider">Finanzas</span>
+                <i class="fas fa-chevron-down text-[10px] text-kivo-gris/60 transition-transform"></i>
+            </button>
+            <div id="section-finanzas" class="sidebar-section space-y-1">
+                <a href="{% url 'incomes:income_list' %}"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-pizarra {% if request.resolver_match.url_name == 'income_list' %}active{% endif %}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {% if request.resolver_match.url_name == 'income_list' %}bg-green-500 text-white{% else %}bg-green-100 text-green-600{% endif %}">
+                        <i class="fas fa-arrow-up text-sm"></i>
+                    </div>
+                    Ingresos
+                </a>
+
+                <a href="{% url 'expenses:expense_list' %}"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-pizarra {% if request.resolver_match.url_name == 'expense_list' %}active{% endif %}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {% if request.resolver_match.url_name == 'expense_list' %}bg-red-500 text-white{% else %}bg-red-100 text-red-600{% endif %}">
+                        <i class="fas fa-arrow-down text-sm"></i>
+                    </div>
+                    Egresos
+                </a>
+
+                <a href="{% url 'bank_accounts:bankaccount_list' %}"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-pizarra {% if request.resolver_match.url_name == 'bankaccount_list' %}active{% endif %}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {% if request.resolver_match.url_name == 'bankaccount_list' %}bg-kivo-petroleo text-white{% else %}bg-kivo-azul-claro/50 text-kivo-petroleo{% endif %}">
+                        <i class="fas fa-university text-sm"></i>
+                    </div>
+                    Cuentas bancarias
+                </a>
+
+                <a href="{% url 'bank_accounts:bankaccount_create' %}"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-pizarra {% if request.resolver_match.url_name == 'bankaccount_create' %}active{% endif %}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {% if request.resolver_match.url_name == 'bankaccount_create' %}bg-green-500 text-white{% else %}bg-green-100 text-green-600{% endif %}">
+                        <i class="fas fa-plus text-sm"></i>
+                    </div>
+                    Nueva cuenta
+                </a>
+            </div>
+
+            <!-- Proximamente -->
+            <button type="button" class="sidebar-section-toggle w-full flex items-center justify-between px-3 mb-2 mt-6" data-target="section-proximamente">
+                <span class="text-xs font-semibold text-kivo-gris uppercase tracking-wider">Proximamente</span>
+                <i class="fas fa-chevron-down text-[10px] text-kivo-gris/60 transition-transform"></i>
+            </button>
+            <div id="section-proximamente" class="sidebar-section space-y-1">
+                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-gris/50 cursor-not-allowed">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-gray-100 text-gray-400">
+                        <i class="fas fa-shopping-cart text-sm"></i>
+                    </div>
+                    <span>Compras</span>
+                    <span class="ml-auto text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
+                </div>
+
+                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-gris/50 cursor-not-allowed">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-gray-100 text-gray-400">
+                        <i class="fas fa-box text-sm"></i>
+                    </div>
+                    <span>Inventario</span>
+                    <span class="ml-auto text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
+                </div>
+
+                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-gris/50 cursor-not-allowed">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-gray-100 text-gray-400">
+                        <i class="fas fa-chart-bar text-sm"></i>
+                    </div>
+                    <span>Reportes</span>
+                    <span class="ml-auto text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
+                </div>
+
+                <div class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-gris/50 cursor-not-allowed">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-gray-100 text-gray-400">
+                        <i class="fas fa-brain text-sm"></i>
+                    </div>
+                    <span>Inteligencia IA</span>
+                    <span class="ml-auto text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
+                </div>
+            </div>
+        </nav>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="absolute bottom-0 left-0 right-0 p-4 border-t border-kivo-azul-claro/50 bg-white sidebar-content">
+        <a href="{% url 'index' %}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-menta transition-all">
+            <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 bg-kivo-azul-claro/50 text-kivo-petroleo">
+                <i class="fas fa-globe text-sm"></i>
+            </div>
+            Ver sitio web
+        </a>
+    </div>
+</aside>
+
+<button id="sidebarHideBtn" type="button" title="Ocultar sidebar"
+        class="sidebar-toggle-btn is-visible fixed left-64 -translate-x-1/2 top-1/2 -translate-y-1/2 w-6 h-12 bg-white border border-kivo-azul-claro/50 rounded-r-lg items-center justify-center text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-menta shadow-sm z-40">
+    <i class="fas fa-chevron-left text-[10px]"></i>
+</button>
+
+<button id="sidebarShowBtn" type="button" title="Mostrar sidebar"
+        class="sidebar-toggle-btn fixed left-0 top-1/2 -translate-y-1/2 w-6 h-12 bg-white border border-kivo-azul-claro/50 border-l-0 rounded-r-lg items-center justify-center text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-menta shadow-sm z-40">
+    <i class="fas fa-chevron-right text-[10px]"></i>
+</button>
+
+<style>
+  .sidebar-link.active {
+    background: #E8F3EF;
+    color: #0F5E56;
+    font-weight: 600;
+  }
+  .sidebar-link:hover:not(.active) {
+    background: rgba(0,0,0,0.03);
+  }
+  .sidebar-section {
+    overflow: hidden;
+    max-height: 500px;
+    transition: max-height 0.25s ease, opacity 0.2s ease;
+    opacity: 1;
+  }
+  .sidebar-section.collapsed-section {
+    max-height: 0;
+    opacity: 0;
+  }
+  .sidebar-section-toggle i {
+    transition: transform 0.25s ease;
+  }
+  .sidebar-section-toggle.collapsed i {
+    transform: rotate(-90deg);
+  }
+  #sidebar.sidebar-hidden {
+    transform: translateX(-100%);
+  }
+  .sidebar-toggle-btn {
+    display: none;
+  }
+  @media (min-width: 1024px) {
+    .sidebar-toggle-btn.is-visible {
+      display: flex;
+    }
+  }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.sidebar-section-toggle').forEach(btn => {
+    const targetId = btn.dataset.target;
+    const target = document.getElementById(targetId);
+    if (!target) return;
+    const storageKey = 'sidebarSection_' + targetId;
+    if (localStorage.getItem(storageKey) === 'collapsed') {
+      target.classList.add('collapsed-section');
+      btn.classList.add('collapsed');
+    }
+    btn.addEventListener('click', () => {
+      const isCollapsed = target.classList.toggle('collapsed-section');
+      btn.classList.toggle('collapsed', isCollapsed);
+      localStorage.setItem(storageKey, isCollapsed ? 'collapsed' : 'open');
+    });
+  });
+  const sidebar = document.getElementById('sidebar');
+  const hideBtn = document.getElementById('sidebarHideBtn');
+  const showBtn = document.getElementById('sidebarShowBtn');
+  function setSidebarHidden(hidden) {
+    sidebar.classList.toggle('sidebar-hidden', hidden);
+    hideBtn.classList.toggle('is-visible', !hidden);
+    showBtn.classList.toggle('is-visible', hidden);
+    localStorage.setItem('sidebarHidden', hidden ? 'true' : 'false');
+  }
+  setSidebarHidden(localStorage.getItem('sidebarHidden') === 'true');
+  hideBtn.addEventListener('click', () => setSidebarHidden(true));
+  showBtn.addEventListener('click', () => setSidebarHidden(false));
+});
+</script>

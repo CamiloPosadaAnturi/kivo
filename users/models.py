@@ -15,11 +15,23 @@ class Company(models.Model):
 
 
 class Business(models.Model):
-    # Un negocio pertenece a una Company (una empresa puede tener múltiples negocios)
+    SECTOR_CHOICES = [
+        ('tienda', 'Tiendas y comercios'),
+        ('restaurante', 'Restaurantes'),
+        ('servicios', 'Empresas de servicios'),
+        ('manufactura', 'Producción y manufactura'),
+        ('multi_sede', 'Empresas multi-sede'),
+        ('otro', 'Otro'),
+    ]
     company = models.ForeignKey(
         Company, on_delete=models.CASCADE, related_name='businesses'
     )
     name = models.CharField(max_length=255)
+    logo = models.ImageField(upload_to='logos/', blank=True, null=True)
+    nit = models.CharField(max_length=50, blank=True, null=True)
+    telefono = models.CharField(max_length=20, blank=True, null=True)
+    direccion = models.CharField(max_length=255, blank=True, null=True)
+    sector = models.CharField(max_length=20, choices=SECTOR_CHOICES, default='otro')
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

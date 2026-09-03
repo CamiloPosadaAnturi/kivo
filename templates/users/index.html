@@ -1,9 +1,562 @@
-<h1>{{ company_name }}</h1>
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kivo - {{ company_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'kivo-menta': '#EAFFFF',
+                        'kivo-azul-claro': '#C2E8FF',
+                        'kivo-gris': '#7298AF',
+                        'kivo-pizarra': '#365C73',
+                        'kivo-oscuro': '#042A41',
+                        'kivo-petroleo': '#004671',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-kivo-menta text-kivo-oscuro font-sans antialiased">
 
-{% if user.is_authenticated %}
-    <a href="{% url 'dashboard' %}">Log in</a>
-    {% else %}
-    <a href="{% url 'login' %}">Log in</a>
-    {% endif %}
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 bg-kivo-menta/90 backdrop-blur-md border-b border-kivo-azul-claro/50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-20">
+                <div class="flex-shrink-0 flex items-center gap-2">
+                    <div class="w-10 h-10 bg-kivo-petroleo rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-md">
+                        K
+                    </div>
+                    <span class="text-2xl font-bold tracking-tight text-kivo-oscuro">Kivo</span>
+                </div>
+                
+                <div class="hidden md:flex items-center gap-8">
+                    <nav class="flex items-center gap-6 text-sm font-medium text-kivo-pizarra">
+                        <a href="#inicio" class="hover:text-kivo-petroleo transition-colors">Inicio</a>
+                        <a href="#funcionalidades" class="hover:text-kivo-petroleo transition-colors">Funcionalidades</a>
+                        <a href="#modulos" class="hover:text-kivo-petroleo transition-colors">Módulos</a>
+                        <a href="#proximamente" class="hover:text-kivo-petroleo transition-colors flex items-center gap-1">
+                            Próximamente <span class="bg-kivo-azul-claro text-kivo-petroleo text-xs px-2 py-0.5 rounded-full">Beta</span>
+                        </a>
+                    </nav>
+                    <div class="flex items-center gap-3">
+                        <a href="{% url 'demo_login' %}" class="text-kivo-petroleo border border-kivo-petroleo/30 px-5 py-2 rounded-xl font-medium hover:bg-kivo-petroleo hover:text-white transition-all text-sm">
+                            Probar demo
+                        </a>
+                        <a href="{% url 'login' %}" class="bg-kivo-petroleo text-white px-5 py-2 rounded-xl font-medium hover:bg-kivo-oscuro transition-all shadow-md text-sm">
+                            Iniciar sesión
+                        </a>
+                    </div>
+                </div>
 
-<a href="https://wa.me/{{ 3206667421 }}" target="_blank">contactate con nosotros</a>
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center">
+                    <button class="text-kivo-pizarra hover:text-kivo-oscuro">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="inicio" class="pt-32 pb-20 lg:pt-40 lg:pb-28 overflow-hidden relative">
+        <div class="absolute top-0 right-0 w-1/2 h-full bg-kivo-azul-claro/30 -z-10 rounded-l-[100px] transform translate-x-1/4 -skew-x-12"></div>
+        <div class="absolute bottom-0 left-0 w-1/3 h-2/3 bg-kivo-petroleo/5 -z-10 rounded-tr-full"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid lg:grid-cols-2 gap-12 items-center">
+                <div class="max-w-2xl">
+                    <div class="inline-block bg-kivo-petroleo/10 text-kivo-petroleo px-4 py-1.5 rounded-full text-sm font-semibold mb-6 tracking-wide uppercase border border-kivo-petroleo/20">
+                        Plataforma de Gestión Empresarial
+                    </div>
+                    <h1 class="text-5xl lg:text-7xl font-extrabold text-kivo-oscuro leading-tight mb-6">
+                        Controla tu negocio hoy.<br>
+                        <span class="text-kivo-petroleo relative inline-block">
+                            Construye su futuro
+                            <svg class="absolute w-full h-3 text-kivo-petroleo/30 -bottom-2 left-0" viewBox="0 0 200 12" preserveAspectRatio="none"><path d="M0,6 Q50,12 100,6 T200,6" fill="currentColor" /></svg>
+                        </span>
+                        mañana.
+                    </h1>
+                    <p class="text-xl text-kivo-pizarra leading-relaxed mb-10 max-w-lg">
+                        Controla tus ingresos, gastos, cuentas bancarias y movimientos financieros desde un solo lugar. Una plataforma diseñada para ayudarte a entender mejor tu negocio hoy y prepararte para gestionar mucho más mañana.
+                    </p>
+                    
+                    <div class="flex flex-col sm:flex-row gap-4 mb-8">
+                        <a href="{% url 'login' %}" class="bg-kivo-petroleo text-white px-8 py-4 rounded-xl font-semibold hover:bg-kivo-oscuro transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 text-center text-lg">
+                            Ingresar a la plataforma
+                        </a>
+                        <a href="#funcionalidades" class="bg-white border-2 border-kivo-gris/30 text-kivo-oscuro px-8 py-4 rounded-xl font-semibold hover:border-kivo-petroleo hover:text-kivo-petroleo transition-all text-center text-lg">
+                            Conocer funcionalidades
+                        </a>
+                    </div>
+                    <p class="text-sm text-kivo-gris italic">
+                        Diseñado para empresas, negocios y equipos que necesitan tener mayor control sobre su operación.
+                    </p>
+                </div>
+                
+                <!-- Dashboard Preview Mockup -->
+                <div class="relative z-10 mt-16 lg:mt-0">
+                    <div class="bg-white rounded-2xl shadow-2xl border border-kivo-azul-claro p-2 transform rotate-1 hover:rotate-0 transition-transform duration-500">
+                        <div class="bg-kivo-menta rounded-xl overflow-hidden">
+                            <div class="h-6 bg-kivo-gris/20 flex items-center px-4 space-x-2 border-b border-kivo-azul-claro">
+                                <div class="w-2 h-2 rounded-full bg-red-400"></div>
+                                <div class="w-2 h-2 rounded-full bg-yellow-400"></div>
+                                <div class="w-2 h-2 rounded-full bg-green-400"></div>
+                            </div>
+                            <div class="p-6">
+                                <div class="grid grid-cols-2 gap-4 mb-6">
+                                    <div class="bg-white p-4 rounded-lg border border-kivo-azul-claro shadow-sm">
+                                        <div class="text-kivo-gris text-sm mb-1">Ingresos</div>
+                                        <div class="text-2xl font-bold text-kivo-petroleo">$24,500</div>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg border border-kivo-azul-claro shadow-sm">
+                                        <div class="text-kivo-gris text-sm mb-1">Gastos</div>
+                                        <div class="text-2xl font-bold text-kivo-pizarra">$12,350</div>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg border border-kivo-azul-claro shadow-sm">
+                                        <div class="text-kivo-gris text-sm mb-1">Balance</div>
+                                        <div class="text-2xl font-bold text-green-600">$12,150</div>
+                                    </div>
+                                    <div class="bg-white p-4 rounded-lg border border-kivo-azul-claro shadow-sm">
+                                        <div class="text-kivo-gris text-sm mb-1">Cuentas</div>
+                                        <div class="text-2xl font-bold text-kivo-oscuro">3</div>
+                                    </div>
+                                </div>
+                                <div class="bg-white p-4 rounded-lg border border-kivo-azul-claro shadow-sm h-32 flex items-end justify-between space-x-2">
+                                    <!-- Chart bars mockup -->
+                                    <div class="w-1/6 bg-kivo-azul-claro h-1/3 rounded-t-sm"></div>
+                                    <div class="w-1/6 bg-kivo-azul-claro h-1/2 rounded-t-sm"></div>
+                                    <div class="w-1/6 bg-kivo-azul-claro h-2/3 rounded-t-sm"></div>
+                                    <div class="w-1/6 bg-kivo-petroleo h-full rounded-t-sm relative">
+                                        <div class="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-kivo-petroleo">Hoy</div>
+                                    </div>
+                                    <div class="w-1/6 bg-kivo-azul-claro h-1/4 rounded-t-sm"></div>
+                                    <div class="w-1/6 bg-kivo-azul-claro h-2/5 rounded-t-sm"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Funcionalidades Section -->
+    <section id="funcionalidades" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 max-w-3xl mx-auto">
+                <span class="text-kivo-petroleo font-semibold tracking-wider uppercase text-sm mb-2 block">Funcionalidades</span>
+                <h2 class="text-4xl font-bold text-kivo-oscuro mb-6">Todo lo que necesitas para empezar a tener control</h2>
+                <p class="text-xl text-kivo-pizarra">
+                    Comienza gestionando la información financiera de tu negocio de forma organizada y centralizada.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Card 1 -->
+                <div class="bg-kivo-menta p-8 rounded-2xl border border-kivo-azul-claro hover:shadow-xl transition-all hover:-translate-y-1 group">
+                    <div class="w-14 h-14 bg-kivo-petroleo/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-kivo-petroleo group-hover:text-white transition-colors text-kivo-petroleo">
+                        <i class="fas fa-money-bill-wave text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-4">Registra ingresos y gastos</h3>
+                    <p class="text-kivo-pizarra leading-relaxed">
+                        Lleva un registro de cada movimiento de dinero de tu negocio y mantén un historial organizado de tus transacciones.
+                    </p>
+                </div>
+
+                <!-- Card 2 -->
+                <div class="bg-kivo-menta p-8 rounded-2xl border border-kivo-azul-claro hover:shadow-xl transition-all hover:-translate-y-1 group">
+                    <div class="w-14 h-14 bg-kivo-petroleo/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-kivo-petroleo group-hover:text-white transition-colors text-kivo-petroleo">
+                        <i class="fas fa-university text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-4">Gestiona tus cuentas</h3>
+                    <p class="text-kivo-pizarra leading-relaxed">
+                        Registra tus cuentas bancarias, define tu saldo inicial y consulta los movimientos asociados a cada cuenta.
+                    </p>
+                </div>
+
+                <!-- Card 3 -->
+                <div class="bg-kivo-menta p-8 rounded-2xl border border-kivo-azul-claro hover:shadow-xl transition-all hover:-translate-y-1 group">
+                    <div class="w-14 h-14 bg-kivo-petroleo/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-kivo-petroleo group-hover:text-white transition-colors text-kivo-petroleo">
+                        <i class="fas fa-chart-pie text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-4">Organiza tus movimientos</h3>
+                    <p class="text-kivo-pizarra leading-relaxed">
+                        Clasifica cada ingreso o gasto por categorías para entender mejor de dónde viene y hacia dónde va el dinero.
+                    </p>
+                </div>
+
+                <!-- Card 4 -->
+                <div class="bg-kivo-menta p-8 rounded-2xl border border-kivo-azul-claro hover:shadow-xl transition-all hover:-translate-y-1 group">
+                    <div class="w-14 h-14 bg-kivo-petroleo/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-kivo-petroleo group-hover:text-white transition-colors text-kivo-petroleo">
+                        <i class="fas fa-building text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-4">Gestiona empresas y negocios</h3>
+                    <p class="text-kivo-pizarra leading-relaxed">
+                        Administra diferentes empresas y negocios desde una estructura organizada, con usuarios y permisos según su rol.
+                    </p>
+                </div>
+
+                <!-- Card 5 -->
+                <div class="bg-kivo-menta p-8 rounded-2xl border border-kivo-azul-claro hover:shadow-xl transition-all hover:-translate-y-1 group">
+                    <div class="w-14 h-14 bg-kivo-petroleo/10 rounded-xl flex items-center justify-center mb-6 group-hover:bg-kivo-petroleo group-hover:text-white transition-colors text-kivo-petroleo">
+                        <i class="fas fa-user-shield text-2xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-4">Acceso por usuarios</h3>
+                    <p class="text-kivo-pizarra leading-relaxed">
+                        Cada usuario puede acceder a la información correspondiente a su empresa y negocio.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Próximamente Section -->
+    <section id="proximamente" class="py-24 bg-kivo-menta relative overflow-hidden">
+        <div class="absolute right-0 top-0 w-96 h-96 bg-kivo-petroleo/5 rounded-full blur-3xl -z-10 translate-x-1/2 -translate-y-1/2"></div>
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold text-kivo-oscuro mb-4">Esto es solo el comienzo</h2>
+                <p class="text-xl text-kivo-pizarra max-w-3xl mx-auto">
+                    Hoy controlas tus finanzas. Mañana gestionas todo tu negocio. La plataforma está pensada para crecer junto a tu empresa.
+                </p>
+            </div>
+
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Upcoming Modules -->
+                <div class="bg-white border-l-4 border-kivo-petroleo p-6 rounded-r-xl shadow-sm hover:shadow-md transition-shadow flex items-start gap-4">
+                    <span class="text-3xl">🛒</span>
+                    <div>
+                        <h4 class="font-bold text-kivo-oscuro mb-1">Compras</h4>
+                        <p class="text-sm text-kivo-pizarra">Gestiona órdenes de compra, proveedores y recepción de mercancía.</p>
+                        <span class="inline-block mt-2 text-xs font-semibold text-kivo-petroleo bg-kivo-azul-claro px-2 py-1 rounded">Próximamente</span>
+                    </div>
+                </div>
+
+                <div class="bg-white border-l-4 border-kivo-petroleo p-6 rounded-r-xl shadow-sm hover:shadow-md transition-shadow flex items-start gap-4">
+                    <span class="text-3xl">📦</span>
+                    <div>
+                        <h4 class="font-bold text-kivo-oscuro mb-1">Inventario</h4>
+                        <p class="text-sm text-kivo-pizarra">Controla productos, entradas, salidas y disponibilidad de stock.</p>
+                        <span class="inline-block mt-2 text-xs font-semibold text-kivo-petroleo bg-kivo-azul-claro px-2 py-1 rounded">Próximamente</span>
+                    </div>
+                </div>
+
+                <div class="bg-white border-l-4 border-kivo-petroleo p-6 rounded-r-xl shadow-sm hover:shadow-md transition-shadow flex items-start gap-4">
+                    <span class="text-3xl">📜</span>
+                    <div>
+                        <h4 class="font-bold text-kivo-oscuro mb-1">Historial</h4>
+                        <p class="text-sm text-kivo-pizarra">Consulta de forma cronológica todos los movimientos y operaciones realizadas.</p>
+                        <span class="inline-block mt-2 text-xs font-semibold text-kivo-petroleo bg-kivo-azul-claro px-2 py-1 rounded">Próximamente</span>
+                    </div>
+                </div>
+
+                <div class="bg-white border-l-4 border-kivo-petroleo p-6 rounded-r-xl shadow-sm hover:shadow-md transition-shadow flex items-start gap-4">
+                    <span class="text-3xl">🧾</span>
+                    <div>
+                        <h4 class="font-bold text-kivo-oscuro mb-1">Ventas y facturación</h4>
+                        <p class="text-sm text-kivo-pizarra">Registra ventas y genera comprobantes directamente desde la plataforma.</p>
+                        <span class="inline-block mt-2 text-xs font-semibold text-kivo-petroleo bg-kivo-azul-claro px-2 py-1 rounded">Próximamente</span>
+                    </div>
+                </div>
+
+                <div class="bg-white border-l-4 border-kivo-petroleo p-6 rounded-r-xl shadow-sm hover:shadow-md transition-shadow flex items-start gap-4">
+                    <span class="text-3xl">👥</span>
+                    <div>
+                        <h4 class="font-bold text-kivo-oscuro mb-1">Clientes</h4>
+                        <p class="text-sm text-kivo-pizarra">Gestiona la información de tus clientes y construye un historial de sus compras.</p>
+                        <span class="inline-block mt-2 text-xs font-semibold text-kivo-petroleo bg-kivo-azul-claro px-2 py-1 rounded">Próximamente</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Roadmap Section -->
+    <section id="modulos" class="py-24 bg-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-20">
+                <h2 class="text-4xl font-bold text-kivo-oscuro mb-4">Una plataforma que crece contigo</h2>
+            </div>
+
+            <div class="relative">
+                <!-- Timeline Line -->
+                <div class="absolute left-0 md:left-1/2 transform md:-translate-x-1/2 h-full w-1 bg-kivo-azul-claro rounded-full"></div>
+
+                <!-- Phase 1 -->
+                <div class="mb-16 relative">
+                    <div class="flex items-center justify-center md:justify-start mb-4 relative z-10">
+                        <div class="bg-kivo-petroleo text-white rounded-full p-4 shadow-lg md:absolute md:left-1/2 md:-translate-x-1/2">
+                            <i class="fas fa-briefcase text-xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-kivo-oscuro ml-4 md:ml-0 md:mt-24 md:text-center bg-white py-2">Fase 1 — Control y operación</h3>
+                    </div>
+                    <div class="bg-kivo-menta p-6 rounded-2xl border border-kivo-azul-claro md:ml-0 md:w-5/12 shadow-sm">
+                        <p class="text-kivo-pizarra mb-4 italic text-sm">
+                            Construimos las bases para gestionar el dinero, las compras, el inventario y los movimientos principales de tu negocio.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Ingresos</span>
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Egresos</span>
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Cuentas</span>
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Caja</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Phase 2 -->
+                <div class="mb-16 relative flex justify-end">
+                    <div class="bg-kivo-menta p-6 rounded-2xl border border-kivo-azul-claro md:mr-0 md:w-5/12 shadow-sm">
+                        <p class="text-kivo-pizarra mb-4 italic text-sm">
+                            Incorporamos herramientas para entender mejor el rendimiento de tu negocio y gestionar su operación.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Proveedores</span>
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Reportes</span>
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Dashboard</span>
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Empleados</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-center md:justify-start mb-4 relative z-10">
+                        <div class="bg-kivo-petroleo text-white rounded-full p-4 shadow-lg md:absolute md:right-1/2 md:translate-x-1/2">
+                            <i class="fas fa-chart-line text-xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-kivo-oscuro ml-4 md:ml-0 md:mt-24 md:text-center bg-white py-2">Fase 2 — Gestión y crecimiento</h3>
+                    </div>
+                </div>
+
+                <!-- Phase 3 -->
+                <div class="relative">
+                    <div class="flex items-center justify-center md:justify-start mb-4 relative z-10">
+                        <div class="bg-kivo-petroleo text-white rounded-full p-4 shadow-lg md:absolute md:left-1/2 md:-translate-x-1/2">
+                            <i class="fas fa-brain text-xl"></i>
+                        </div>
+                        <h3 class="text-2xl font-bold text-kivo-oscuro ml-4 md:ml-0 md:mt-24 md:text-center bg-white py-2">Fase 3 — Inteligencia y escala</h3>
+                    </div>
+                    <div class="bg-kivo-menta p-6 rounded-2xl border border-kivo-azul-claro md:ml-0 md:w-5/12 shadow-sm">
+                        <p class="text-kivo-pizarra mb-4 italic text-sm">
+                            Convertimos los datos de tu negocio en información útil para ayudarte a crecer y tomar mejores decisiones.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Predicción IA</span>
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Multi-sede</span>
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Portal Clientes</span>
+                            <span class="bg-white px-3 py-1 rounded-md text-xs font-semibold text-kivo-pizarra border border-kivo-azul-claro">Producción</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Tipos de Negocios Section -->
+    <section class="py-24 bg-kivo-azul-claro/30 relative overflow-hidden">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 max-w-3xl mx-auto">
+                <h2 class="text-4xl font-bold text-kivo-oscuro mb-6">Una plataforma adaptable a tu forma de trabajar</h2>
+                <p class="text-xl text-kivo-pizarra">
+                    Desde pequeños negocios hasta empresas con diferentes equipos, áreas o sedes.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-kivo-azul-claro text-center hover:shadow-md transition-shadow">
+                    <div class="text-4xl mb-4">🏪</div>
+                    <h4 class="font-bold text-kivo-oscuro text-sm">Tiendas y comercios</h4>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-kivo-azul-claro text-center hover:shadow-md transition-shadow">
+                    <div class="text-4xl mb-4">🍽️</div>
+                    <h4 class="font-bold text-kivo-oscuro text-sm">Restaurantes</h4>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-kivo-azul-claro text-center hover:shadow-md transition-shadow">
+                    <div class="text-4xl mb-4">🛠️</div>
+                    <h4 class="font-bold text-kivo-oscuro text-sm">Empresas de servicios</h4>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-kivo-azul-claro text-center hover:shadow-md transition-shadow">
+                    <div class="text-4xl mb-4">🏭</div>
+                    <h4 class="font-bold text-kivo-oscuro text-sm">Producción y manufactura</h4>
+                </div>
+                <div class="bg-white p-6 rounded-2xl shadow-sm border border-kivo-azul-claro text-center hover:shadow-md transition-shadow">
+                    <div class="text-4xl mb-4">🏢</div>
+                    <h4 class="font-bold text-kivo-oscuro text-sm">Empresas multi-sede</h4>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Beneficios Section -->
+    <section class="py-24 bg-white relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="text-center mb-16 max-w-3xl mx-auto">
+                <h2 class="text-4xl font-bold text-kivo-oscuro mb-6">Menos desorden. Más control. Mejores decisiones.</h2>
+            </div>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="bg-kivo-menta p-8 rounded-2xl border border-kivo-azul-claro">
+                    <div class="w-12 h-12 bg-kivo-petroleo text-white rounded-lg flex items-center justify-center mb-4 shadow-sm">
+                        <i class="fas fa-layer-group text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-3">Centraliza tu información</h3>
+                    <p class="text-kivo-pizarra">Evita tener datos dispersos entre hojas de cálculo, mensajes y diferentes herramientas.</p>
+                </div>
+                <div class="bg-kivo-menta p-8 rounded-2xl border border-kivo-azul-claro">
+                    <div class="w-12 h-12 bg-kivo-petroleo text-white rounded-lg flex items-center justify-center mb-4 shadow-sm">
+                        <i class="fas fa-eye text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-3">Conoce lo que ocurre en tu negocio</h3>
+                    <p class="text-kivo-pizarra">Registra y consulta los movimientos importantes de tu operación desde un solo lugar.</p>
+                </div>
+                <div class="bg-kivo-menta p-8 rounded-2xl border border-kivo-azul-claro">
+                    <div class="w-12 h-12 bg-kivo-petroleo text-white rounded-lg flex items-center justify-center mb-4 shadow-sm">
+                        <i class="fas fa-expand-arrows-alt text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-3">Crece sin cambiar de plataforma</h3>
+                    <p class="text-kivo-pizarra">La aplicación está diseñada para incorporar nuevos módulos a medida que tu negocio lo necesite.</p>
+                </div>
+                <div class="bg-kivo-menta p-8 rounded-2xl border border-kivo-azul-claro">
+                    <div class="w-12 h-12 bg-kivo-petroleo text-white rounded-lg flex items-center justify-center mb-4 shadow-sm">
+                        <i class="fas fa-brain text-xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-3">Convierte datos en decisiones</h3>
+                    <p class="text-kivo-pizarra">El objetivo no es solo guardar información, sino ayudarte a entenderla.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- AI Section -->
+    <section class="py-24 bg-kivo-petroleo text-white relative overflow-hidden">
+        <div class="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
+        <div class="absolute -bottom-24 -right-24 w-96 h-96 bg-kivo-azul-claro/10 rounded-full blur-3xl"></div>
+        
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div class="grid lg:grid-cols-2 gap-16 items-center">
+                <div>
+                    <span class="inline-block bg-white/10 text-kivo-azul-claro px-3 py-1 rounded-full text-sm font-semibold mb-6 tracking-wide border border-white/20 backdrop-blur-sm">Inteligencia Artificial</span>
+                    <h2 class="text-4xl lg:text-5xl font-bold mb-6 leading-tight">
+                        Pregúntale a tu negocio.<br>La IA te ayuda a entenderlo.
+                    </h2>
+                    <p class="text-xl text-kivo-azul-claro/90 mb-8 leading-relaxed max-w-lg">
+                        Consulta la información de tu empresa utilizando lenguaje natural y convierte tus datos en respuestas útiles para tomar mejores decisiones.
+                    </p>
+                    <div class="bg-white/10 p-4 rounded-xl border border-white/10 inline-block backdrop-blur-sm">
+                        <span class="text-xs font-bold uppercase tracking-wider text-kivo-azul-claro/70">Estado:</span>
+                        <span class="ml-2 font-semibold text-white">Próximamente</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-md shadow-lg hover:-translate-y-1 transform duration-300">
+                        <div class="text-2xl mb-3">💬</div>
+                        <p class="font-medium text-white/90">¿Cuánto gasté este mes?</p>
+                    </div>
+                    <div class="bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-md shadow-lg hover:-translate-y-1 transform duration-300">
+                        <div class="text-2xl mb-3">💬</div>
+                        <p class="font-medium text-white/90">¿Cuál es mi categoría con más gastos?</p>
+                    </div>
+                    <div class="bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-md shadow-lg hover:-translate-y-1 transform duration-300">
+                        <div class="text-2xl mb-3">💬</div>
+                        <p class="font-medium text-white/90">¿Qué producto me genera más ganancias?</p>
+                    </div>
+                    <div class="bg-white/5 p-5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-md shadow-lg hover:-translate-y-1 transform duration-300">
+                        <div class="text-2xl mb-3">💬</div>
+                        <p class="font-medium text-white/90">¿Qué días vendo más?</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 bg-kivo-menta relative">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center relative z-10">
+            <div class="bg-white p-12 rounded-3xl shadow-xl border border-kivo-azul-claro">
+                <h2 class="text-4xl font-bold text-kivo-oscuro mb-6">Una sola plataforma. Más de 50 posibilidades para tu negocio.</h2>
+                <p class="text-lg text-kivo-pizarra mb-10 max-w-2xl mx-auto leading-relaxed">
+                    Finanzas, ventas, inventario, clientes, proveedores, empleados, operaciones, documentos e inteligencia artificial. Todo conectado dentro de un mismo ecosistema empresarial.
+                </p>
+                
+                <div class="flex flex-wrap justify-center gap-3 mb-12">
+                    <span class="bg-kivo-azul-claro/30 text-kivo-petroleo px-4 py-2 rounded-full text-sm font-medium">FINANZAS</span>
+                    <span class="text-kivo-gris">→</span>
+                    <span class="bg-kivo-azul-claro/30 text-kivo-petroleo px-4 py-2 rounded-full text-sm font-medium">OPERACIÓN</span>
+                    <span class="text-kivo-gris">→</span>
+                    <span class="bg-kivo-azul-claro/30 text-kivo-petroleo px-4 py-2 rounded-full text-sm font-medium">CLIENTES</span>
+                    <span class="text-kivo-gris">→</span>
+                    <span class="bg-kivo-azul-claro/30 text-kivo-petroleo px-4 py-2 rounded-full text-sm font-medium">EQUIPO</span>
+                    <span class="text-kivo-gris">→</span>
+                    <span class="bg-kivo-petroleo text-white px-4 py-2 rounded-full text-sm font-medium shadow-md">INTELIGENCIA</span>
+                </div>
+
+                <a href="{% url 'login' %}" class="bg-kivo-petroleo text-white px-10 py-4 rounded-xl font-bold hover:bg-kivo-oscuro transition-all shadow-lg hover:shadow-xl hover:-translate-y-1 inline-block text-lg">
+                    Empieza a tener el control de tu negocio hoy.
+                </a>
+                <p class="mt-6 text-sm text-kivo-gris font-medium">Tu negocio evoluciona. Tu plataforma también.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-kivo-oscuro text-white pt-20 pb-10 border-t-8 border-kivo-petroleo">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-12 mb-16">
+                <div>
+                    <h3 class="text-lg font-bold mb-6 text-white flex items-center gap-2">
+                        <div class="w-8 h-8 bg-kivo-petroleo rounded-lg flex items-center justify-center text-sm">K</div>
+                        Kivo
+                    </h3>
+                    <ul class="space-y-4 text-sm text-gray-400">
+                        <li><a href="#inicio" class="hover:text-white transition-colors">Inicio</a></li>
+                        <li><a href="#funcionalidades" class="hover:text-white transition-colors">Funcionalidades</a></li>
+                        <li><a href="#modulos" class="hover:text-white transition-colors">Módulos</a></li>
+                        <li><a href="#proximamente" class="hover:text-white transition-colors">Próximamente</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-6 text-white">Plataforma</h4>
+                    <ul class="space-y-4 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Finanzas</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Transacciones</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Cuentas</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Empresas</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Negocios</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-6 text-white">Próximamente</h4>
+                    <ul class="space-y-4 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Inventario</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Ventas</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Clientes</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Reportes</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Inteligencia Artificial</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-bold mb-6 text-white">Legal</h4>
+                    <ul class="space-y-4 text-sm text-gray-400">
+                        <li><a href="#" class="hover:text-white transition-colors">Términos y condiciones</a></li>
+                        <li><a href="#" class="hover:text-white transition-colors">Política de privacidad</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-white/10 pt-8 flex flex-col md:flex-row justify-between items-center text-sm text-gray-500">
+                <p>&copy; 2026 Kivo. Todos los derechos reservados.</p>
+                <div class="flex space-x-4 mt-4 md:mt-0">
+                    <a href="#" class="hover:text-white transition-colors"><i class="fab fa-linkedin"></i></a>
+                    <a href="#" class="hover:text-white transition-colors"><i class="fab fa-twitter"></i></a>
+                    <a href="#" class="hover:text-white transition-colors"><i class="fab fa-instagram"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+</body>
+</html>

@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Cuentas bancarias{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-kivo-oscuro"><i class="fas fa-university text-kivo-petroleo mr-2"></i>Cuentas bancarias</h1>
+            <p class="text-kivo-gris mt-1">Gestiona tus cuentas bancarias.</p>
+        </div>
+        <a href="{% url 'bank_accounts:bankaccount_create' %}" class="px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl flex items-center gap-2 hover:opacity-90 transition-all">
+            <i class="fas fa-plus"></i> Nueva cuenta
+        </a>
+    </div>
+
+    {% if active_accounts %}
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {% for account in active_accounts %}
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-4">
+                <div class="w-10 h-10 bg-kivo-azul-claro/30 rounded-xl flex items-center justify-center">
+                    <i class="fas fa-university text-kivo-petroleo"></i>
+                </div>
+                <span class="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">Activa</span>
+            </div>
+            <h3 class="font-bold text-kivo-oscuro text-lg">{{ account.name }}</h3>
+            <p class="text-kivo-gris text-sm">{{ account.bank_name }}</p>
+            <p class="text-kivo-gris text-sm mb-4">{{ account.account_number }}</p>
+            <div class="flex items-center justify-between pt-4 border-t border-gray-100">
+                <div>
+                    <p class="text-xs text-kivo-gris">Saldo</p>
+                    <p class="text-lg font-bold text-kivo-oscuro">${{ account.current_balance|floatformat:0 }}</p>
+                </div>
+                <div class="flex gap-2">
+                    <a href="{% url 'bank_accounts:bankaccount_detail' account.pk %}" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all"><i class="fas fa-eye"></i></a>
+                    <a href="{% url 'bank_accounts:bankaccount_update' account.pk %}" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all"><i class="fas fa-edit"></i></a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-12 text-center">
+        <div class="w-20 h-20 bg-kivo-azul-claro/30 rounded-full flex items-center justify-center mx-auto mb-6">
+            <i class="fas fa-university text-3xl text-kivo-petroleo"></i>
+        </div>
+        <h3 class="text-xl font-bold text-kivo-oscuro mb-2">No hay cuentas bancarias</h3>
+        <p class="text-kivo-gris mb-6 max-w-md mx-auto">Añade tu primera cuenta bancaria para empezar a registrar transacciones.</p>
+        <a href="{% url 'bank_accounts:bankaccount_create' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl hover:opacity-90 transition-all">
+            <i class="fas fa-plus"></i> Nueva cuenta
+        </a>
+    </div>
+    {% endif %}
+
+    {% if inactive_accounts %}
+    <div>
+        <h2 class="text-xl font-bold text-kivo-oscuro mb-4">Cuentas inactivas</h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for account in inactive_accounts %}
+            <div class="bg-gray-50 rounded-2xl p-5 border border-gray-200 opacity-75">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-10 h-10 bg-gray-200 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-university text-gray-500"></i>
+                    </div>
+                    <span class="px-2 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-semibold">Inactiva</span>
+                </div>
+                <h3 class="font-bold text-kivo-oscuro text-lg">{{ account.name }}</h3>
+                <p class="text-kivo-gris text-sm">{{ account.bank_name }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

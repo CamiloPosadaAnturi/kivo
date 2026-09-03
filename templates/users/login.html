@@ -1,6 +1,507 @@
-<h1>Login</h1>
-<form method="post">
-    {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Login</button>
-</form>
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kivo - Iniciar Sesión</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'kivo-menta': '#EAFFFF',
+                        'kivo-azul-claro': '#C2E8FF',
+                        'kivo-gris': '#7298AF',
+                        'kivo-pizarra': '#365C73',
+                        'kivo-oscuro': '#042A41',
+                        'kivo-petroleo': '#004671',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
+        * {
+            font-family: 'Inter', sans-serif;
+        }
+
+        html, body {
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Fondo con imagen */
+        .login-bg {
+            background-image: url('{% static "img/bg-login.jfif" %}');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        /* Overlay oscuro sobre la imagen */
+        .login-overlay {
+            background: linear-gradient(135deg, rgba(4, 42, 65, 0.85) 0%, rgba(0, 70, 113, 0.75) 50%, rgba(54, 92, 115, 0.7) 100%);
+        }
+
+        /* Animación de entrada */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(-40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeInRight {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 20px rgba(0, 70, 113, 0.3);
+            }
+            50% {
+                box-shadow: 0 0 40px rgba(0, 70, 113, 0.6);
+            }
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .animate-fade-in-left {
+            animation: fadeInLeft 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .animate-fade-in-right {
+            animation: fadeInRight 0.8s ease-out forwards;
+            opacity: 0;
+        }
+
+        .animate-scale-in {
+            animation: scaleIn 0.6s ease-out forwards;
+            opacity: 0;
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+        .delay-400 { animation-delay: 0.4s; }
+        .delay-500 { animation-delay: 0.5s; }
+        .delay-600 { animation-delay: 0.6s; }
+        .delay-700 { animation-delay: 0.7s; }
+        .delay-800 { animation-delay: 0.8s; }
+
+        /* Glass card effect */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        /* Floating label styles */
+        .input-group {
+            position: relative;
+        }
+
+        .input-group input {
+            transition: all 0.3s ease;
+        }
+
+        .input-group label {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7298AF;
+            font-size: 14px;
+            font-weight: 500;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            background: transparent;
+            padding: 0 4px;
+        }
+
+        .input-group input:focus ~ label,
+        .input-group input:not(:placeholder-shown) ~ label {
+            top: -10px;
+            left: 12px;
+            font-size: 11px;
+            color: #004671;
+            background: white;
+            font-weight: 600;
+        }
+
+        .input-group input:focus {
+            border-color: #004671;
+            box-shadow: 0 0 0 3px rgba(0, 70, 113, 0.15);
+        }
+
+        /* Focus ring animation */
+        .input-group::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #004671, #C2E8FF);
+            transition: all 0.4s ease;
+            transform: translateX(-50%);
+        }
+
+        .input-group:focus-within::after {
+            width: 100%;
+        }
+
+        /* Button hover effect */
+        .btn-primary {
+            background: linear-gradient(135deg, #004671 0%, #365C73 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-primary::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .btn-primary:hover::before {
+            left: 100%;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 70, 113, 0.4);
+        }
+
+        /* Decorative elements */
+        .deco-circle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(194, 232, 255, 0.1);
+            pointer-events: none;
+        }
+
+        .particle {
+            pointer-events: none;
+        }
+
+        /* Password toggle */
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #7298AF;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .password-toggle:hover {
+            color: #004671;
+        }
+
+        /* Particles animation */
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            background: rgba(194, 232, 255, 0.3);
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .particle:nth-child(1) { width: 8px; height: 8px; top: 20%; left: 10%; animation-delay: 0s; }
+        .particle:nth-child(2) { width: 12px; height: 12px; top: 60%; left: 80%; animation-delay: 1s; }
+        .particle:nth-child(3) { width: 6px; height: 6px; top: 40%; left: 20%; animation-delay: 2s; }
+        .particle:nth-child(4) { width: 10px; height: 10px; top: 80%; left: 60%; animation-delay: 3s; }
+        .particle:nth-child(5) { width: 8px; height: 8px; top: 10%; left: 70%; animation-delay: 4s; }
+    </style>
+</head>
+<body class="login-bg h-screen flex items-center justify-center p-4 overflow-hidden relative">
+    <!-- Overlay -->
+    <div class="login-overlay absolute inset-0"></div>
+    
+    <!-- Floating particles -->
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+
+    <!-- Decorative circles -->
+    <div class="deco-circle w-64 h-64 -top-20 -left-20 animate-fade-in-left delay-200"></div>
+    <div class="deco-circle w-96 h-96 -bottom-32 -right-32 animate-fade-in-right delay-300"></div>
+    <div class="deco-circle w-40 h-40 top-1/4 right-1/4 animate-fade-in-up delay-400"></div>
+
+    <!-- Main container -->
+    <div class="relative z-10 w-full max-w-5xl flex flex-col lg:flex-row items-center gap-8 lg:gap-16">
+        
+        <!-- Left side - Branding -->
+        <div class="flex-1 text-center lg:text-left animate-fade-in-left delay-200">
+            <div class="mb-8">
+                <div class="inline-flex items-center justify-center w-24 h-24 bg-white rounded-3xl shadow-2xl mb-6 animate-float">
+                    <img src="{% static 'img/logo-kivo.jfif' %}" alt="Kivo Logo" class="w-16 h-16 object-contain">
+                </div>
+                <h1 class="text-5xl lg:text-6xl font-extrabold text-white mb-4 leading-tight">
+                    Bienvenido a
+                    <span class="block text-kivo-azul-claro">Kivo</span>
+                </h1>
+                <p class="text-xl text-white/80 max-w-md mx-auto lg:mx-0 leading-relaxed">
+                    Gestiona tus finanzas, controla tu negocio y toma mejores decisiones desde un solo lugar.
+                </p>
+            </div>
+            
+            <!-- Features list -->
+            <div class="space-y-4 max-w-md mx-auto lg:mx-0">
+                <div class="flex items-center gap-3 text-white/70 animate-fade-in-up delay-400">
+                    <div class="w-10 h-10 bg-kivo-petroleo/30 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-chart-line text-kivo-azul-claro"></i>
+                    </div>
+                    <span class="text-sm">Control financiero en tiempo real</span>
+                </div>
+                <div class="flex items-center gap-3 text-white/70 animate-fade-in-up delay-500">
+                    <div class="w-10 h-10 bg-kivo-petroleo/30 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-shield-alt text-kivo-azul-claro"></i>
+                    </div>
+                    <span class="text-sm">Seguridad y datos protegidos</span>
+                </div>
+                <div class="flex items-center gap-3 text-white/70 animate-fade-in-up delay-600">
+                    <div class="w-10 h-10 bg-kivo-petroleo/30 rounded-xl flex items-center justify-center">
+                        <i class="fas fa-brain text-kivo-azul-claro"></i>
+                    </div>
+                    <span class="text-sm">Inteligencia artificial integrada</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right side - Login form -->
+        <div class="w-full max-w-md animate-scale-in delay-300">
+            <div class="glass-card rounded-3xl shadow-2xl p-8 lg:p-10">
+                <!-- Form header -->
+                <div class="text-center mb-8 animate-fade-in-up delay-400">
+                    <h2 class="text-2xl font-bold text-kivo-oscuro mb-2">Iniciar sesión</h2>
+                    <p class="text-kivo-gris text-sm">Ingresa tus credenciales para acceder</p>
+                </div>
+
+                <!-- Messages -->
+                {% if messages %}
+                <div class="mb-6 space-y-2 animate-fade-in-up delay-500">
+                    {% for message in messages %}
+                    <div class="p-4 rounded-xl text-sm {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                        <div class="flex items-center gap-2">
+                            <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+                            {{ message }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Login form -->
+                <form method="post" class="space-y-5">
+                    {% csrf_token %}
+                    
+                    <!-- Username field -->
+                    <div class="input-group animate-fade-in-up delay-500">
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            placeholder=" "
+                            required
+                            class="w-full px-4 py-4 border-2 border-gray-200 rounded-xl text-kivo-oscuro font-medium focus:outline-none transition-all"
+                        >
+                        <label for="username">
+                            <i class="fas fa-user mr-2 text-kivo-gris"></i>Correo electrónico
+                        </label>
+                    </div>
+
+                    <!-- Password field -->
+                    <div class="input-group animate-fade-in-up delay-600">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder=" "
+                            required
+                            class="w-full px-4 py-4 pr-12 border-2 border-gray-200 rounded-xl text-kivo-oscuro font-medium focus:outline-none transition-all"
+                        >
+                        <label for="password">
+                            <i class="fas fa-lock mr-2 text-kivo-gris"></i>Contraseña
+                        </label>
+                        <span class="password-toggle" onclick="togglePassword()">
+                            <i class="fas fa-eye" id="eye-icon"></i>
+                        </span>
+                    </div>
+
+                    <!-- Remember me & Forgot password -->
+                    <div class="flex items-center justify-between text-sm animate-fade-in-up delay-700">
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" name="remember" class="w-4 h-4 text-kivo-petroleo rounded border-gray-300 focus:ring-kivo-petroleo">
+                            <span class="text-kivo-gris">Recordarme</span>
+                        </label>
+                        <a href="#" class="text-kivo-petroleo hover:text-kivo-oscuro font-medium transition-colors">
+                            ¿Olvidaste tu contraseña?
+                        </a>
+                    </div>
+
+                    <!-- Submit button -->
+                    <button 
+                        type="submit" 
+                        class="btn-primary w-full py-4 text-white font-bold rounded-xl text-lg animate-fade-in-up delay-700"
+                    >
+                        <span class="flex items-center justify-center gap-2">
+                            Ingresar
+                            <i class="fas fa-arrow-right"></i>
+                        </span>
+                    </button>
+                </form>
+
+                <!-- Divider -->
+                <div class="relative my-8 animate-fade-in-up delay-800">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-gray-200"></div>
+                    </div>
+                    <div class="relative flex justify-center text-sm">
+                        <span class="px-4 bg-white text-kivo-gris">o continúa con</span>
+                    </div>
+                </div>
+
+                <!-- Social login -->
+                <div class="grid grid-cols-2 gap-4 animate-fade-in-up delay-800">
+                    <button type="button" class="flex items-center justify-center gap-2 py-3 px-4 border-2 border-gray-200 rounded-xl hover:border-kivo-petroleo hover:bg-kivo-menta transition-all group">
+                        <i class="fab fa-google text-lg text-gray-500 group-hover:text-kivo-petroleo"></i>
+                        <span class="text-sm font-medium text-kivo-gris group-hover:text-kivo-petroleo">Google</span>
+                    </button>
+                    <button type="button" class="flex items-center justify-center gap-2 py-3 px-4 border-2 border-gray-200 rounded-xl hover:border-kivo-petroleo hover:bg-kivo-menta transition-all group">
+                        <i class="fab fa-microsoft text-lg text-gray-500 group-hover:text-kivo-petroleo"></i>
+                        <span class="text-sm font-medium text-kivo-gris group-hover:text-kivo-petroleo">Microsoft</span>
+                    </button>
+                </div>
+
+                <!-- Register link -->
+                <p class="text-center mt-8 text-sm text-kivo-gris animate-fade-in-up delay-800">
+                    ¿No tienes una cuenta? 
+                    <a href="#" class="text-kivo-petroleo font-semibold hover:text-kivo-oscuro transition-colors">
+                        Regístrate gratis
+                    </a>
+                </p>
+            </div>
+
+            <!-- Back to home -->
+            <div class="text-center mt-6 animate-fade-in-up delay-800">
+                <a href="{% url 'index' %}" class="inline-flex items-center gap-2 text-white/70 hover:text-white transition-colors text-sm">
+                    <i class="fas fa-arrow-left"></i>
+                    Volver al inicio
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle password visibility
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const eyeIcon = document.getElementById('eye-icon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                eyeIcon.classList.remove('fa-eye');
+                eyeIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                eyeIcon.classList.remove('fa-eye-slash');
+                eyeIcon.classList.add('fa-eye');
+            }
+        }
+
+        // Add subtle parallax effect on mouse move
+        document.addEventListener('mousemove', (e) => {
+            const particles = document.querySelectorAll('.particle');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            particles.forEach((particle, index) => {
+                const speed = (index + 1) * 0.5;
+                particle.style.transform = `translate(${x * speed * 20}px, ${y * speed * 20}px)`;
+            });
+        });
+
+        // Form validation feedback
+        const inputs = document.querySelectorAll('.input-group input');
+        inputs.forEach(input => {
+            input.addEventListener('blur', function() {
+                if (this.value && this.checkValidity()) {
+                    this.classList.add('border-green-400');
+                    this.classList.remove('border-gray-200');
+                } else if (this.value && !this.checkValidity()) {
+                    this.classList.add('border-red-400');
+                    this.classList.remove('border-gray-200');
+                } else {
+                    this.classList.remove('border-green-400', 'border-red-400');
+                    this.classList.add('border-gray-200');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

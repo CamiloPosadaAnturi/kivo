@@ -1,2 +1,200 @@
-<p> Bienvenido, {{ user.username }}! ({{user.company}})</p>
-<a href="{% url 'logout' %}">Cerrar sesión</a>
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Welcome Header -->
+    <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-kivo-oscuro">Bienvenido, {{ user.username }}</h1>
+                <p class="text-kivo-gris mt-1">
+                    {% if user.business %}
+                    {{ user.business.name }}
+                    {% else %}
+                    Panel de control de Kivo
+                    {% endif %}
+                </p>
+            </div>
+            <div class="flex gap-3">
+                <a href="{% url 'incomes:income_list' %}" 
+                   class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl flex items-center gap-2 transition-all">
+                    <i class="fas fa-arrow-up"></i> Ingresos
+                </a>
+                <a href="{% url 'expenses:expense_list' %}" 
+                   class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl flex items-center gap-2 transition-all">
+                    <i class="fas fa-arrow-down"></i> Egresos
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Apps Grid -->
+    <div>
+        <h2 class="text-lg font-bold text-kivo-oscuro mb-4 flex items-center gap-2">
+            <i class="fas fa-th-large text-kivo-petroleo"></i>
+            Tus aplicaciones
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            
+            <!-- Ingresos -->
+            <a href="{% url 'incomes:income_list' %}" 
+               class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center group-hover:bg-green-500 group-hover:text-white transition-all text-green-600">
+                        <i class="fas fa-arrow-up text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro">Ingresos</h3>
+                        <p class="text-sm text-kivo-gris">Gestionar ingresos</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Egresos -->
+            <a href="{% url 'expenses:expense_list' %}" 
+               class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center group-hover:bg-red-500 group-hover:text-white transition-all text-red-600">
+                        <i class="fas fa-arrow-down text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro">Egresos</h3>
+                        <p class="text-sm text-kivo-gris">Gestionar egresos</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Cuentas bancarias -->
+            <a href="{% url 'bank_accounts:bankaccount_list' %}" 
+               class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-kivo-petroleo/10 rounded-xl flex items-center justify-center group-hover:bg-kivo-petroleo group-hover:text-white transition-all text-kivo-petroleo">
+                        <i class="fas fa-university text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro">Cuentas bancarias</h3>
+                        <p class="text-sm text-kivo-gris">Administrar tus cuentas</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Nueva cuenta -->
+            <a href="{% url 'bank_accounts:bankaccount_create' %}" 
+               class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-green-500/10 rounded-xl flex items-center justify-center group-hover:bg-green-500 group-hover:text-white transition-all text-green-500">
+                        <i class="fas fa-plus text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro">Nueva cuenta</h3>
+                        <p class="text-sm text-kivo-gris">Agregar cuenta bancaria</p>
+                    </div>
+                </div>
+            </a>
+        </div>
+    </div>
+
+    <!-- Proximamente Section -->
+    <div>
+        <h2 class="text-lg font-bold text-kivo-oscuro mb-4 flex items-center gap-2">
+            <i class="fas fa-clock text-kivo-gris"></i>
+            Proximamente
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+            
+            <!-- Compras -->
+            <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm opacity-60 cursor-not-allowed">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro flex items-center gap-2">
+                            Compras
+                            <span class="text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
+                        </h3>
+                        <p class="text-sm text-kivo-gris">Ordenes y proveedores</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inventario -->
+            <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm opacity-60 cursor-not-allowed">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <i class="fas fa-box text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro flex items-center gap-2">
+                            Inventario
+                            <span class="text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
+                        </h3>
+                        <p class="text-sm text-kivo-gris">Control de stock</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Reportes -->
+            <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm opacity-60 cursor-not-allowed">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <i class="fas fa-chart-bar text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro flex items-center gap-2">
+                            Reportes
+                            <span class="text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
+                        </h3>
+                        <p class="text-sm text-kivo-gris">Analisis financiero</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inteligencia IA -->
+            <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm opacity-60 cursor-not-allowed">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
+                        <i class="fas fa-brain text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro flex items-center gap-2">
+                            Inteligencia IA
+                            <span class="text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
+                        </h3>
+                        <p class="text-sm text-kivo-gris">Asistente inteligente</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm">
+        <h2 class="text-lg font-bold text-kivo-oscuro mb-4 flex items-center gap-2">
+            <i class="fas fa-chart-pie text-kivo-petroleo"></i>
+            Resumen rapido
+        </h2>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center p-4 bg-kivo-menta rounded-xl">
+                <p class="text-3xl font-bold text-kivo-petroleo">{{ total_transactions|default:"0" }}</p>
+                <p class="text-sm text-kivo-gris mt-1">Transacciones</p>
+            </div>
+            <div class="text-center p-4 bg-green-50 rounded-xl">
+                <p class="text-3xl font-bold text-green-600">${{ total_income|default:"0"|floatformat:0 }}</p>
+                <p class="text-sm text-kivo-gris mt-1">Ingresos</p>
+            </div>
+            <div class="text-center p-4 bg-red-50 rounded-xl">
+                <p class="text-3xl font-bold text-red-500">${{ total_expense|default:"0"|floatformat:0 }}</p>
+                <p class="text-sm text-kivo-gris mt-1">Gastos</p>
+            </div>
+            <div class="text-center p-4 bg-kivo-azul-claro/30 rounded-xl">
+                <p class="text-3xl font-bold text-kivo-oscuro">{{ total_accounts|default:"0" }}</p>
+                <p class="text-sm text-kivo-gris mt-1">Cuentas</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

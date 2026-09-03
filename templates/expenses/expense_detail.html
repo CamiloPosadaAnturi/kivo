@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle del gasto{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-8">
+        <a href="{% url 'expenses:expense_list' %}" class="inline-flex items-center gap-2 text-kivo-gris hover:text-red-500 transition-colors text-sm mb-4">
+            <i class="fas fa-arrow-left"></i> Volver a gastos
+        </a>
+        <h1 class="text-3xl font-bold text-kivo-oscuro">Detalle del gasto</h1>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg border border-kivo-azul-claro/50 overflow-hidden">
+        <div class="p-6 bg-red-50 border-b border-red-100 text-center">
+            <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fas fa-arrow-down text-red-500 text-2xl"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-red-500">-${{ expense.amount|floatformat:0 }}</h2>
+            <p class="text-kivo-gris mt-1">{{ expense.date|date:"l, d \d\e F \d\e Y" }}</p>
+        </div>
+
+        <div class="p-6 space-y-4">
+            <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                <span class="text-sm text-kivo-gris">Categoría</span>
+                <span class="font-semibold text-kivo-oscuro">{{ expense.category.name }}</span>
+            </div>
+            <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                <span class="text-sm text-kivo-gris">Método de pago</span>
+                <span class="font-semibold text-kivo-oscuro">
+                    {% if expense.payment_method == 'cash' %}Efectivo{% elif expense.payment_method == 'transfer' %}Transferencia{% else %}Tarjeta{% endif %}
+                </span>
+            </div>
+            {% if expense.bank_account %}
+            <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                <span class="text-sm text-kivo-gris">Cuenta bancaria</span>
+                <span class="font-semibold text-kivo-oscuro">{{ expense.bank_account.bank_name }} - {{ expense.bank_account.account_number }}</span>
+            </div>
+            {% endif %}
+            {% if expense.description %}
+            <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                <span class="text-sm text-kivo-gris">Descripción</span>
+                <span class="font-semibold text-kivo-oscuro text-right max-w-xs">{{ expense.description }}</span>
+            </div>
+            {% endif %}
+            <div class="flex items-center justify-between py-3">
+                <span class="text-sm text-kivo-gris">Creado</span>
+                <span class="font-medium text-kivo-oscuro">{{ expense.created_at|date:"d/m/Y H:i" }}</span>
+            </div>
+        </div>
+
+        <div class="p-6 bg-gray-50 border-t border-gray-100 flex gap-4 justify-end">
+            <a href="{% url 'expenses:expense_list' %}" class="px-6 py-3 border-2 border-gray-200 text-kivo-gris font-semibold rounded-xl hover:border-kivo-gris hover:text-kivo-oscuro transition-all">Volver</a>
+            <a href="{% url 'expenses:expense_update' expense.pk %}" class="px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl flex items-center gap-2 hover:opacity-90 transition-all"><i class="fas fa-edit"></i> Editar</a>
+            <a href="{% url 'expenses:expense_delete' expense.pk %}" class="px-6 py-3 bg-red-500 text-white font-semibold rounded-xl flex items-center gap-2 hover:bg-red-600 transition-all"><i class="fas fa-trash"></i> Eliminar</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,200 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kivo - {% block title %}Dashboard{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'kivo-menta': '#EAFFFF',
+                        'kivo-azul-claro': '#C2E8FF',
+                        'kivo-gris': '#7298AF',
+                        'kivo-pizarra': '#365C73',
+                        'kivo-oscuro': '#042A41',
+                        'kivo-petroleo': '#004671',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        * { font-family: 'Inter', sans-serif; }
+        
+        .nav-link {
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: #004671;
+            transition: width 0.3s ease;
+        }
+        .nav-link:hover::after,
+        .nav-link.active::after {
+            width: 100%;
+        }
+        .nav-link.active {
+            color: #004671;
+            font-weight: 600;
+        }
+        
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 40px rgba(0, 70, 113, 0.12);
+        }
+
+        .btn-kivo {
+            background: linear-gradient(135deg, #004671 0%, #365C73 100%);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        .btn-kivo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: left 0.5s ease;
+        }
+        .btn-kivo:hover::before {
+            left: 100%;
+        }
+        .btn-kivo:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 20px rgba(0, 70, 113, 0.35);
+        }
+
+        .sidebar-link {
+            transition: all 0.2s ease;
+            border-left: 3px solid transparent;
+        }
+        .sidebar-link:hover {
+            background: rgba(0, 70, 113, 0.05);
+            border-left-color: #C2E8FF;
+        }
+        .sidebar-link.active {
+            background: rgba(0, 70, 113, 0.1);
+            border-left-color: #004671;
+            color: #004671;
+            font-weight: 600;
+        }
+
+        /* Sidebar overlay for mobile */
+        .sidebar-overlay {
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        .sidebar-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Main content transition with sidebar */
+        .main-content {
+            transition: margin-left 0.3s ease;
+        }
+        @media (min-width: 1024px) {
+            .main-content {
+                margin-left: 256px;
+            }
+        }
+    </style>
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="bg-kivo-menta text-kivo-oscuro antialiased min-h-screen">
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-kivo-azul-claro/50 shadow-sm">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between items-center h-16">
+                <!-- Logo & Sidebar Toggle -->
+                <div class="flex items-center gap-3">
+                    <button onclick="toggleSidebar()" class="lg:hidden text-kivo-pizarra hover:text-kivo-petroleo transition-colors">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <a href="{% url 'dashboard' %}" class="flex items-center gap-2">
+                        <div class="w-9 h-9 bg-kivo-petroleo rounded-xl flex items-center justify-center shadow-md">
+                            <img src="{% static 'img/logo-kivo.jfif' %}" alt="Kivo" class="w-6 h-6 object-contain">
+                        </div>
+                        <span class="text-xl font-bold text-kivo-oscuro">Kivo</span>
+                    </a>
+                </div>
+
+                <!-- Right side -->
+                <div class="flex items-center gap-4">
+                    <div class="hidden md:flex items-center gap-3 text-sm text-kivo-gris">
+                        <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border border-kivo-azul-claro/50 bg-white">
+                            {% if user.business and user.business.logo %}
+                                <img src="{{ user.business.logo.url }}" alt="{{ user.business.name }}" class="w-full h-full object-cover">
+                            {% else %}
+                                <div class="w-full h-full flex items-center justify-center bg-kivo-petroleo text-white font-bold text-xs">
+                                    {{ user.business.name|default:user.username|slice:":2"|upper }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <span class="font-medium text-kivo-oscuro">{{ user.username }}</span>
+                    </div>
+                    <a href="{% url 'logout' %}" class="text-kivo-gris hover:text-red-500 transition-colors text-sm" title="Cerrar sesión">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar Overlay (mobile) -->
+    <div id="sidebarOverlay" class="sidebar-overlay fixed inset-0 bg-black/50 z-40 lg:hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Sidebar -->
+    {% include 'includes/sidebar.html' %}
+
+    <!-- Main content -->
+    <main class="pt-16 min-h-screen main-content">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-kivo-azul-claro/50 py-4 main-content">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row justify-between items-center text-sm text-kivo-gris">
+                <p>&copy; 2026 Kivo. Todos los derechos reservados.</p>
+                <div class="flex items-center gap-4 mt-2 md:mt-0">
+                    <a href="#" class="hover:text-kivo-petroleo transition-colors">Ayuda</a>
+                    <a href="#" class="hover:text-kivo-petroleo transition-colors">Soporte</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('active');
+        }
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

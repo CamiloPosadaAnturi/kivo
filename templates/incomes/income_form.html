@@ -1,0 +1,108 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{% if form.instance.pk %}Editar ingreso{% else %}Nuevo ingreso{% endif %}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-input { transition: all 0.3s ease; }
+    .form-input:focus { border-color: #059669; box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.1); }
+    .payment-method-btn { transition: all 0.3s ease; border: 2px solid #e5e7eb; background: white; }
+    .payment-method-btn.selected { border-color: #059669; background: rgba(5, 150, 105, 0.05); color: #059669; }
+    .bank-account-section { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; opacity: 0; }
+    .bank-account-section.visible { max-height: 200px; opacity: 1; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto">
+    <div class="mb-8">
+        <a href="{% url 'incomes:income_list' %}" class="inline-flex items-center gap-2 text-kivo-gris hover:text-green-600 transition-colors text-sm mb-4">
+            <i class="fas fa-arrow-left"></i> Volver a ingresos
+        </a>
+        <h1 class="text-3xl font-bold text-kivo-oscuro">{% if form.instance.pk %}Editar ingreso{% else %}Nuevo ingreso{% endif %}</h1>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-lg border border-kivo-azul-claro/50 overflow-hidden">
+        <form method="post" id="incomeForm">
+            {% csrf_token %}
+            <div class="p-6 space-y-6">
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-tag mr-2 text-kivo-gris"></i>Categoría</label>
+                    <select name="category" class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all" required>
+                        <option value="">Selecciona una categoría</option>
+                        {% for category in categories %}
+                        <option value="{{ category.pk }}" {% if form.instance.category.pk == category.pk %}selected{% endif %}>{{ category.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-dollar-sign mr-2 text-kivo-gris"></i>Monto</label>
+                    <div class="relative">
+                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-kivo-gris font-medium">$</span>
+                        {{ form.amount }}
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-3"><i class="fas fa-credit-card mr-2 text-kivo-gris"></i>Método de pago</label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <button type="button" class="payment-method-btn py-3 px-4 rounded-xl font-medium text-sm flex flex-col items-center gap-2" data-method="cash" onclick="selectPaymentMethod('cash')">
+                            <i class="fas fa-money-bill-wave text-lg"></i> Efectivo
+                        </button>
+                        <button type="button" class="payment-method-btn py-3 px-4 rounded-xl font-medium text-sm flex flex-col items-center gap-2" data-method="transfer" onclick="selectPaymentMethod('transfer')">
+                            <i class="fas fa-university text-lg"></i> Transferencia
+                        </button>
+                        <button type="button" class="payment-method-btn py-3 px-4 rounded-xl font-medium text-sm flex flex-col items-center gap-2" data-method="card" onclick="selectPaymentMethod('card')">
+                            <i class="fas fa-credit-card text-lg"></i> Tarjeta
+                        </button>
+                    </div>
+                    <input type="hidden" name="payment_method" id="paymentMethodInput" value="{{ form.instance.payment_method|default:'cash' }}">
+                </div>
+                <div id="bankSection" class="bank-account-section">
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-university mr-2 text-kivo-gris"></i>Cuenta bancaria</label>
+                    <select name="bank_account" class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all">
+                        <option value="">Selecciona una cuenta</option>
+                        {% for account in bank_accounts %}
+                        <option value="{{ account.pk }}" {% if form.instance.bank_account.pk == account.pk %}selected{% endif %}>{{ account.bank_name }} - {{ account.account_number }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-calendar mr-2 text-kivo-gris"></i>Fecha</label>
+                    <input type="date" name="date" value="{{ form.instance.date|default:'' }}" class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all" required>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-align-left mr-2 text-kivo-gris"></i>Descripción</label>
+                    <textarea name="description" rows="3" maxlength="200" placeholder="Breve descripción..." class="form-input w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all resize-none">{{ form.instance.description|default:'' }}</textarea>
+                    <p class="text-xs text-kivo-gris mt-1">Opcional. Máximo 200 caracteres.</p>
+                </div>
+            </div>
+            <div class="p-6 bg-gray-50 border-t border-gray-100 flex flex-col sm:flex-row gap-4 justify-end">
+                <a href="{% url 'incomes:income_list' %}" class="px-6 py-3 border-2 border-gray-200 text-kivo-gris font-semibold rounded-xl hover:border-kivo-gris hover:text-kivo-oscuro transition-all text-center">Cancelar</a>
+                <button type="submit" class="btn-kivo px-8 py-3 bg-green-500 text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:bg-green-600 transition-all">
+                    <i class="fas fa-check"></i> {% if form.instance.pk %}Guardar cambios{% else %}Guardar ingreso{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let selectedPaymentMethod = '{{ form.instance.payment_method|default:"cash" }}';
+document.addEventListener('DOMContentLoaded', function() { selectPaymentMethod(selectedPaymentMethod); });
+function selectPaymentMethod(method) {
+    selectedPaymentMethod = method;
+    document.getElementById('paymentMethodInput').value = method;
+    document.querySelectorAll('.payment-method-btn').forEach(b => b.classList.remove('selected'));
+    document.querySelector(`[data-method="${method}"]`).classList.add('selected');
+    const bankSection = document.getElementById('bankSection');
+    if (method === 'transfer') { bankSection.classList.add('visible'); } else { bankSection.classList.remove('visible'); }
+}
+document.addEventListener('DOMContentLoaded', function() {
+    const amountInput = document.querySelector('input[name="amount"]');
+    if (amountInput) { amountInput.addEventListener('input', function() { this.value = this.value.replace(/[^0-9]/g, ''); }); }
+});
+</script>
+{% endblock %}
