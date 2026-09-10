@@ -33,9 +33,9 @@
                     <td class="px-4 py-3 text-sm font-medium text-kivo-oscuro font-mono">{{ product.sku }}</td>
                     <td class="px-4 py-3 text-sm text-kivo-oscuro">{{ product.name }}</td>
                     <td class="px-4 py-3 text-sm text-right {% if product.current_stock <= product.min_stock %}text-red-600 font-bold{% else %}text-kivo-oscuro{% endif %}">
-                        {{ product.current_stock }}
+                        {{ product.current_stock|floatformat:"-3" }}
                     </td>
-                    <td class="px-4 py-3 text-sm text-right text-kivo-gris">{{ product.min_stock }}</td>
+                    <td class="px-4 py-3 text-sm text-right text-kivo-gris">{{ product.min_stock|floatformat:"-3" }}</td>
                     <td class="px-4 py-3 text-sm text-right text-kivo-oscuro">${{ product.purchase_price }}</td>
                     <td class="px-4 py-3 text-sm text-right font-bold text-kivo-oscuro">${{ product.total_value|floatformat:2 }}</td>
                 </tr>

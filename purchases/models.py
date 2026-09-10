@@ -9,21 +9,28 @@ class Supplier(models.Model):
     """
     Supplier that provides goods to the business.
     """
-    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, related_name='suppliers')
-    name = models.CharField(max_length=200)
-    nit = models.CharField(max_length=50)
-    contact_name = models.CharField(max_length=150, blank=True)
-    contact_phone = models.CharField(max_length=50, blank=True)
-    contact_email = models.EmailField(blank=True)
-    address = models.CharField(max_length=255, blank=True)
-    city = models.CharField(max_length=100, blank=True)
-    payment_terms = models.CharField(max_length=100, blank=True)
-    notes = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    business = models.ForeignKey(
+        'users.Business', on_delete=models.CASCADE, related_name='suppliers',
+        verbose_name='Negocio')
+    name = models.CharField('Nombre o razón social', max_length=200)
+    nit = models.CharField('NIT', max_length=50)
+    contact_name = models.CharField('Nombre del contacto', max_length=150, blank=True)
+    contact_phone = models.CharField('Teléfono', max_length=50, blank=True)
+    contact_email = models.EmailField('Correo electrónico', blank=True)
+    address = models.CharField('Dirección', max_length=255, blank=True)
+    city = models.CharField('Ciudad', max_length=100, blank=True)
+    payment_terms = models.CharField(
+        'Condiciones de pago', max_length=100, blank=True,
+        help_text='Ej: 30 días, contado, 50% anticipado')
+    notes = models.TextField('Notas', blank=True)
+    is_active = models.BooleanField('Activo', default=True)
+    created_at = models.DateTimeField('Creado el', auto_now_add=True)
+    updated_at = models.DateTimeField('Actualizado el', auto_now=True)
 
     class Meta:
+        verbose_name = 'Proveedor'
+        verbose_name_plural = 'Proveedores'
+        ordering = ['name']
         constraints = [
             models.UniqueConstraint(fields=['business', 'nit'], name='uniq_supplier_nit_per_business')
         ]
@@ -45,21 +52,33 @@ class PurchaseOrder(models.Model):
         ('cancelled', 'Cancelado'),
     ]
 
-    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, related_name='purchase_orders')
-    number = models.CharField(max_length=50, unique=True, editable=False)
-    supplier = models.ForeignKey(Supplier, on_delete=models.PROTECT, related_name='purchase_orders')
-    warehouse = models.ForeignKey('inventory.Warehouse', on_delete=models.PROTECT, related_name='purchase_orders')
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='draft')
-    order_date = models.DateField(default=timezone.now)
-    expected_date = models.DateField(null=True, blank=True)
-    tax_rate = models.DecimalField(max_digits=5, decimal_places=2, default=0)
-    discount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    notes = models.TextField(blank=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    business = models.ForeignKey(
+        'users.Business', on_delete=models.CASCADE, related_name='purchase_orders',
+        verbose_name='Negocio')
+    number = models.CharField('Número', max_length=50, unique=True, editable=False)
+    supplier = models.ForeignKey(
+        Supplier, on_delete=models.PROTECT, related_name='purchase_orders',
+        verbose_name='Proveedor')
+    warehouse = models.ForeignKey(
+        'inventory.Warehouse', on_delete=models.PROTECT, related_name='purchase_orders',
+        verbose_name='Bodega de destino')
+    status = models.CharField('Estado', max_length=20, choices=STATUS_CHOICES, default='draft')
+    order_date = models.DateField('Fecha de la orden', default=timezone.now)
+    expected_date = models.DateField('Fecha estimada de entrega', null=True, blank=True)
+    tax_rate = models.DecimalField(
+        'IVA (%)', max_digits=5, decimal_places=2, default=0,
+        help_text='Porcentaje de impuesto sobre el subtotal')
+    discount = models.DecimalField('Descuento', max_digits=12, decimal_places=2, default=0)
+    notes = models.TextField('Notas', blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='Creada por')
+    created_at = models.DateTimeField('Creada el', auto_now_add=True)
+    updated_at = models.DateTimeField('Actualizada el', auto_now=True)
 
     class Meta:
+        verbose_name = 'Orden de compra'
+        verbose_name_plural = 'Órdenes de compra'
         ordering = ['-created_at']
 
     def __str__(self):
@@ -130,11 +149,20 @@ class PurchaseOrderLine(models.Model):
     """
     Line item belonging to a purchase order.
     """
-    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='lines')
-    product = models.ForeignKey('inventory.Product', on_delete=models.PROTECT, related_name='po_lines')
-    quantity = models.DecimalField(max_digits=12, decimal_places=3, validators=[MinValueValidator(0.001)])
-    unit_price = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    received_qty = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    purchase_order = models.ForeignKey(
+        PurchaseOrder, on_delete=models.CASCADE, related_name='lines',
+        verbose_name='Orden de compra')
+    product = models.ForeignKey(
+        'inventory.Product', on_delete=models.PROTECT, related_name='po_lines',
+        verbose_name='Producto')
+    quantity = models.DecimalField(
+        'Cantidad', max_digits=12, decimal_places=3, validators=[MinValueValidator(0.001)])
+    unit_price = models.DecimalField('Precio unitario', max_digits=12, decimal_places=2, default=0)
+    received_qty = models.DecimalField('Cantidad recibida', max_digits=12, decimal_places=3, default=0)
+
+    class Meta:
+        verbose_name = 'Línea de la orden'
+        verbose_name_plural = 'Líneas de la orden'
 
     @property
     def line_total(self):
@@ -152,16 +180,26 @@ class PurchaseReceipt(models.Model):
     """
     Receipt of goods against a purchase order.
     """
-    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, related_name='purchase_receipts')
-    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='receipts')
-    warehouse = models.ForeignKey('inventory.Warehouse', on_delete=models.PROTECT, related_name='purchase_receipts')
-    number = models.CharField(max_length=50, unique=True, editable=False)
-    received_date = models.DateField(default=timezone.now)
-    notes = models.TextField(blank=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    business = models.ForeignKey(
+        'users.Business', on_delete=models.CASCADE, related_name='purchase_receipts',
+        verbose_name='Negocio')
+    purchase_order = models.ForeignKey(
+        PurchaseOrder, on_delete=models.CASCADE, related_name='receipts',
+        verbose_name='Orden de compra')
+    warehouse = models.ForeignKey(
+        'inventory.Warehouse', on_delete=models.PROTECT, related_name='purchase_receipts',
+        verbose_name='Bodega donde ingresa')
+    number = models.CharField('Número', max_length=50, unique=True, editable=False)
+    received_date = models.DateField('Fecha de recepción', default=timezone.now)
+    notes = models.TextField('Notas', blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='Registrada por')
+    created_at = models.DateTimeField('Creada el', auto_now_add=True)
 
     class Meta:
+        verbose_name = 'Recepción de mercancía'
+        verbose_name_plural = 'Recepciones de mercancía'
         ordering = ['-created_at']
 
     def __str__(self):
@@ -199,11 +237,22 @@ class PurchaseReceiptLine(models.Model):
     """
     Line item belonging to a purchase receipt.
     """
-    receipt = models.ForeignKey(PurchaseReceipt, on_delete=models.CASCADE, related_name='lines')
-    order_line = models.ForeignKey(PurchaseOrderLine, on_delete=models.CASCADE, related_name='receipt_lines')
-    product = models.ForeignKey('inventory.Product', on_delete=models.PROTECT, related_name='receipt_lines')
-    quantity = models.DecimalField(max_digits=12, decimal_places=3, validators=[MinValueValidator(0.001)])
-    unit_cost = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    receipt = models.ForeignKey(
+        PurchaseReceipt, on_delete=models.CASCADE, related_name='lines',
+        verbose_name='Recepción')
+    order_line = models.ForeignKey(
+        PurchaseOrderLine, on_delete=models.CASCADE, related_name='receipt_lines',
+        verbose_name='Línea de la orden')
+    product = models.ForeignKey(
+        'inventory.Product', on_delete=models.PROTECT, related_name='receipt_lines',
+        verbose_name='Producto')
+    quantity = models.DecimalField(
+        'Cantidad recibida', max_digits=12, decimal_places=3, validators=[MinValueValidator(0.001)])
+    unit_cost = models.DecimalField('Costo unitario', max_digits=12, decimal_places=2, default=0)
+
+    class Meta:
+        verbose_name = 'Línea de recepción'
+        verbose_name_plural = 'Líneas de recepción'
 
     def __str__(self):
         return f'{self.receipt.number} - {self.product.name}'
@@ -213,19 +262,27 @@ class PurchaseInvoice(models.Model):
     """
     Supplier invoice related to a purchase order.
     """
-    business = models.ForeignKey('users.Business', on_delete=models.CASCADE, related_name='purchase_invoices')
-    purchase_order = models.ForeignKey(PurchaseOrder, on_delete=models.CASCADE, related_name='invoices')
-    number = models.CharField(max_length=100)
-    invoice_date = models.DateField()
-    due_date = models.DateField(null=True, blank=True)
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
-    tax_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0)
-    total = models.DecimalField(max_digits=12, decimal_places=2)
-    notes = models.TextField(blank=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    business = models.ForeignKey(
+        'users.Business', on_delete=models.CASCADE, related_name='purchase_invoices',
+        verbose_name='Negocio')
+    purchase_order = models.ForeignKey(
+        PurchaseOrder, on_delete=models.CASCADE, related_name='invoices',
+        verbose_name='Orden de compra')
+    number = models.CharField('Número de factura', max_length=100)
+    invoice_date = models.DateField('Fecha de la factura')
+    due_date = models.DateField('Fecha de vencimiento', null=True, blank=True)
+    subtotal = models.DecimalField('Subtotal', max_digits=12, decimal_places=2)
+    tax_amount = models.DecimalField('IVA', max_digits=12, decimal_places=2, default=0)
+    total = models.DecimalField('Total', max_digits=12, decimal_places=2)
+    notes = models.TextField('Notas', blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name='Registrada por')
+    created_at = models.DateTimeField('Creada el', auto_now_add=True)
 
     class Meta:
+        verbose_name = 'Factura de compra'
+        verbose_name_plural = 'Facturas de compra'
         constraints = [
             models.UniqueConstraint(fields=['business', 'number'], name='uniq_purchase_invoice_per_business')
         ]

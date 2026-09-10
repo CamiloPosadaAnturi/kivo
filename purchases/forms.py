@@ -3,19 +3,14 @@ from decimal import Decimal
 from django import forms
 from django.core.exceptions import ValidationError
 
-from inventory.models import Warehouse
+from core.forms import INPUT_CLASSES as FIELD_CLASSES, StyledFormMixin
+from inventory.models import Product, Warehouse
 from .models import (
     Supplier, PurchaseOrder, PurchaseOrderLine,
     PurchaseReceipt, PurchaseReceiptLine, PurchaseInvoice,
 )
 
-FIELD_CLASSES = (
-    'w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro '
-    'focus:outline-none transition-all focus:border-kivo-petroleo'
-)
-
-
-class TenantModelForm(forms.ModelForm):
+class TenantModelForm(StyledFormMixin, forms.ModelForm):
     """
     Base form that pops business from instance and filters querysets.
     """
@@ -53,19 +48,45 @@ class PurchaseOrderForm(TenantModelForm):
             self.fields['warehouse'].disabled = True
 
 
-class PurchaseOrderLineForm(forms.ModelForm):
+class PurchaseOrderLineForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = PurchaseOrderLine
         fields = ['product', 'quantity', 'unit_price']
+        widgets = {
+            'product': forms.Select(attrs={'class': FIELD_CLASSES}),
+            'quantity': forms.NumberInput(attrs={'step': '0.001', 'min': '0', 'class': FIELD_CLASSES}),
+            'unit_price': forms.NumberInput(attrs={'step': '0.01', 'min': '0', 'class': FIELD_CLASSES}),
+        }
 
     def __init__(self, *args, **kwargs):
+        # El business llega por form_kwargs del formset. Antes se leía de
+        # self.form, que no existe en un ModelForm: el filtro nunca corría.
+        self.business = kwargs.pop('business', None)
         super().__init__(*args, **kwargs)
-        if hasattr(self, 'form') and hasattr(self.form, 'business'):
-            self.fields['product'].queryset = self.fields['product'].queryset.filter(business=self.form.business)
+        if self.business is not None:
+            self.fields['product'].queryset = (
+                Product.objects.filter(business=self.business, is_active=True).order_by('name')
+            )
+
+
+class BasePurchaseOrderLineFormSet(forms.BaseInlineFormSet):
+    def clean(self):
+        super().clean()
+        if any(self.errors):
+            return
+        vivas = 0
+        for form in self.forms:
+            if not form.cleaned_data or form.cleaned_data.get('DELETE'):
+                continue
+            vivas += 1
+        if vivas == 0:
+            raise ValidationError('La orden debe tener al menos una línea con producto y cantidad.')
 
 
 PurchaseOrderLineFormSet = forms.inlineformset_factory(
-    PurchaseOrder, PurchaseOrderLine, form=PurchaseOrderLineForm, extra=1, can_delete=True
+    PurchaseOrder, PurchaseOrderLine,
+    form=PurchaseOrderLineForm, formset=BasePurchaseOrderLineFormSet,
+    extra=1, can_delete=True,
 )
 
 
@@ -100,7 +121,7 @@ class PurchaseReceiptForm(TenantModelForm):
             )
 
 
-class PurchaseReceiptLineForm(forms.Form):
+class PurchaseReceiptLineForm(StyledFormMixin, forms.Form):
     """
     Una línea de recepción atada a una línea de la orden de compra.
 

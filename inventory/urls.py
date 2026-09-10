@@ -5,6 +5,8 @@ from . import views
 app_name = 'inventory'
 
 urlpatterns = [
+    path('', views.InventoryHomeView.as_view(), name='home'),
+
     # Warehouse
     path('bodegas/', views.WarehouseListView.as_view(), name='warehouse_list'),
     path('bodegas/crear/', views.WarehouseCreateView.as_view(), name='warehouse_create'),

@@ -1,11 +1,11 @@
 {% extends 'base.html' %}
-{% block title %}Almacenes{% endblock %}
+{% block title %}Bodegas{% endblock %}
 {% block content %}
 <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
     <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-bold text-kivo-oscuro">Almacenes</h1>
+        <h1 class="text-2xl font-bold text-kivo-oscuro">Bodegas</h1>
         <a href="{% url 'inventory:warehouse_create' %}" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
-            <i class="fas fa-plus"></i> Nuevo Almacén
+            <i class="fas fa-plus"></i> Nuevo Bodega
         </a>
     </div>
     
@@ -44,7 +44,7 @@
                 {% empty %}
                 <tr>
                     <td colspan="4" class="px-6 py-12 text-center text-kivo-gris">
-                        No hay almacenes registrados.
+                        No hay bodegas registrados.
                     </td>
                 </tr>
                 {% endfor %}

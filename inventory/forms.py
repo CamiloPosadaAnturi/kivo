@@ -1,9 +1,10 @@
 from django import forms
+
+from core.forms import INPUT_CLASSES as FIELD_CLASSES, StyledFormMixin
 from .models import Warehouse, UnitOfMeasure, ProductCategory, Product, InventoryMovement
 
-FIELD_CLASSES = 'w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all focus:border-kivo-petroleo'
 
-class TenantModelForm(forms.ModelForm):
+class TenantModelForm(StyledFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         self.business = kwargs.pop('business', None)
         super().__init__(*args, **kwargs)
@@ -80,7 +81,7 @@ class ProductForm(TenantModelForm):
                 raise forms.ValidationError('Ya existe un producto con este SKU en el negocio.')
         return sku
 
-class InventoryAdjustmentForm(forms.Form):
+class InventoryAdjustmentForm(StyledFormMixin, forms.Form):
     """
     Ajuste por conteo físico: el usuario digita el stock REAL contado y el
     sistema calcula la diferencia contra el saldo del sistema.

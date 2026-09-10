@@ -1,0 +1,18 @@
+{% comment %}Renderiza un campo de formulario con el estilo de Kivo.{% endcomment %}
+{% if field.field.widget.input_type == 'checkbox' %}
+<label for="{{ field.id_for_label }}" class="flex items-center gap-3 py-3 cursor-pointer">
+    {{ field }}
+    <span class="text-sm font-medium text-kivo-pizarra">{{ field.label }}</span>
+</label>
+{% if field.help_text %}<p class="text-xs text-kivo-gris -mt-2">{{ field.help_text }}</p>{% endif %}
+{% for error in field.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+{% else %}
+<div>
+    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-kivo-pizarra mb-1">
+        {{ field.label }}{% if field.field.required %}<span class="text-red-400"> *</span>{% endif %}
+    </label>
+    {{ field }}
+    {% if field.help_text %}<p class="text-xs text-kivo-gris mt-1">{{ field.help_text }}</p>{% endif %}
+    {% for error in field.errors %}<p class="text-red-500 text-xs mt-1">{{ error }}</p>{% endfor %}
+</div>
+{% endif %}

@@ -4,8 +4,8 @@
 <div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
     <div class="flex justify-between items-center mb-6">
         <h1 class="text-2xl font-bold text-kivo-oscuro">Movimientos de Inventario</h1>
-        <a href="{% url 'inventory:movement_create' %}" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
-            <i class="fas fa-plus"></i> Nuevo Movimiento
+        <a href="{% url 'inventory:adjustment_create' %}" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+            <i class="fas fa-scale-balanced"></i> Ajuste por conteo
         </a>
     </div>
 
@@ -44,7 +44,7 @@
                         <span class="px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">Ajuste</span>
                         {% endif %}
                     </td>
-                    <td class="px-6 py-4 text-sm text-kivo-oscuro text-right">{{ movement.quantity }}</td>
+                    <td class="px-6 py-4 text-sm text-kivo-oscuro text-right">{{ movement.quantity|floatformat:"-3" }}</td>
                     <td class="px-6 py-4 text-sm text-kivo-gris">{{ movement.reference|default:"-" }}</td>
                 </tr>
                 {% empty %}

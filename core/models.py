@@ -1,24 +1,25 @@
 from django.db import models
-from django.conf import settings
 
 
 class Category(models.Model):
     INCOME = 'income'
     EXPENSE = 'expense'
     TYPE_CHOICES = [
-        (INCOME, 'Income'),
-        (EXPENSE, 'Expense'),
+        (INCOME, 'Ingreso'),
+        (EXPENSE, 'Egreso'),
     ]
-    name = models.CharField(max_length=100)
-    type = models.CharField(max_length=10, choices=TYPE_CHOICES)
+    name = models.CharField('Nombre', max_length=100)
+    type = models.CharField('Tipo', max_length=10, choices=TYPE_CHOICES)
     business = models.ForeignKey(
         'users.Business', on_delete=models.CASCADE,
-        related_name='categories', null=True, blank=True
+        related_name='categories', null=True, blank=True,
+        verbose_name='Negocio',
     )
-    is_active = models.BooleanField(default=True)
+    is_active = models.BooleanField('Activa', default=True)
 
     class Meta:
-        verbose_name_plural = 'Categories'
+        verbose_name = 'Categoría'
+        verbose_name_plural = 'Categorías'
         ordering = ['type', 'name']
 
     def __str__(self):

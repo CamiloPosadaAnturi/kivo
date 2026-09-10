@@ -48,7 +48,7 @@ class BankAccountUpdateView(LoginRequiredMixin, UpdateView):
         return BankAccount.objects.none()
 
     def form_valid(self, form):
-        messages.success(self.request, 'Account updated successfully.')
+        messages.success(self.request, 'Cuenta actualizada correctamente.')
         return super().form_valid(form)
 
 
@@ -72,12 +72,12 @@ class BankAccountDeleteView(LoginRequiredMixin, UpdateView):
             account.save()
             messages.warning(
                 self.request,
-                f'Account "{account.name}" has associated transactions. '
-                'It has been deactivated instead of deleted to preserve history.'
+                f'La cuenta "{account.name}" tiene movimientos asociados. '
+                'Se desactivó en lugar de eliminarla para conservar el historial.'
             )
         else:
             account.delete()
-            messages.success(self.request, 'Account deleted successfully.')
+            messages.success(self.request, 'Cuenta eliminada correctamente.')
         return super().form_valid(form)
 
 

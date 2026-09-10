@@ -1,10 +1,12 @@
 from django import forms
+
+from core.forms import StyledFormMixin
 from .models import Income
 from bank_accounts.models import BankAccount
 from core.models import Category
 
 
-class IncomeForm(forms.ModelForm):
+class IncomeForm(StyledFormMixin, forms.ModelForm):
     amount = forms.DecimalField(
         max_digits=12,
         decimal_places=0,
@@ -23,7 +25,8 @@ class IncomeForm(forms.ModelForm):
         model = Income
         fields = ['category', 'amount', 'payment_method', 'bank_account', 'date', 'description']
         widgets = {
-            'date': forms.DateInput(attrs={'type': 'date'}),
+            'date': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'description': forms.TextInput(attrs={'placeholder': 'Opcional'}),
         }
 
     def __init__(self, *args, **kwargs):

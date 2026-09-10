@@ -1,13 +1,15 @@
 {% extends 'base.html' %}
-{% block title %}{{ title }} Orden de Compra{% endblock %}
+{% block title %}Orden de Compra{% endblock %}
 {% block content %}
-<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
-    <h1 class="text-2xl font-bold text-kivo-oscuro mb-6">{{ title }}</h1>
+<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <h1 class="text-2xl font-bold text-kivo-oscuro mb-6">
+        {% if object %}Editar orden {{ object.number }}{% else %}Nueva orden de compra{% endif %}
+    </h1>
 
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
-        <div class="p-4 rounded-xl mb-2 {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% endif %}">
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">
             {{ message }}
         </div>
         {% endfor %}
@@ -16,20 +18,154 @@
 
     <form method="post" class="space-y-6">
         {% csrf_token %}
-        {% for field in form %}
-        <div>
-            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-kivo-pizarra mb-1">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}
-            <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
-            {% endif %}
+
+        {% if form.non_field_errors %}
+        <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
-        {% endfor %}
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for field in form %}
+                {% if field.is_hidden %}
+                    {{ field }}
+                {% else %}
+                <div{% if field.name == 'notes' %} class="md:col-span-2"{% endif %}>
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-kivo-pizarra mb-1">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        {% if lines_editable %}
+        <div>
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="font-bold text-kivo-oscuro">Líneas de la orden</h2>
+                <button type="button" id="add-line" class="text-sm font-medium text-kivo-petroleo hover:text-kivo-oscuro">
+                    <i class="fas fa-plus mr-1"></i> Agregar línea
+                </button>
+            </div>
+
+            {{ formset.management_form }}
+            {% if formset.non_form_errors %}
+            <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm mb-3">
+                {% for error in formset.non_form_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="overflow-x-auto border border-kivo-azul-claro/50 rounded-xl">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead>
+                        <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                            <th class="px-4 py-3 text-left">Producto</th>
+                            <th class="px-4 py-3 text-left w-40">Cantidad</th>
+                            <th class="px-4 py-3 text-left w-40">Precio unitario</th>
+                            <th class="px-4 py-3 text-center w-24">Quitar</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lines-body" class="divide-y divide-gray-100">
+                        {% for line_form in formset %}
+                        <tr class="line-row">
+                            {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
+                            <td class="px-4 py-3">
+                                {{ line_form.product }}
+                                {% if line_form.product.errors %}<p class="text-red-500 text-xs mt-1">{{ line_form.product.errors.0 }}</p>{% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                {{ line_form.quantity }}
+                                {% if line_form.quantity.errors %}<p class="text-red-500 text-xs mt-1">{{ line_form.quantity.errors.0 }}</p>{% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                {{ line_form.unit_price }}
+                                {% if line_form.unit_price.errors %}<p class="text-red-500 text-xs mt-1">{{ line_form.unit_price.errors.0 }}</p>{% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if line_form.instance.pk %}
+                                    <label class="text-xs text-kivo-gris flex items-center justify-center gap-1">
+                                        {{ line_form.DELETE }} borrar
+                                    </label>
+                                {% else %}
+                                    <button type="button" class="remove-line text-red-500 hover:text-red-700" title="Quitar">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-kivo-gris mt-2">Los productos que ves son los de tu negocio.</p>
+        </div>
+
+        <template id="empty-line-template">
+            <tr class="line-row">
+                <td class="px-4 py-3">{{ formset.empty_form.product }}</td>
+                <td class="px-4 py-3">{{ formset.empty_form.quantity }}</td>
+                <td class="px-4 py-3">{{ formset.empty_form.unit_price }}</td>
+                <td class="px-4 py-3 text-center">
+                    <button type="button" class="remove-line text-red-500 hover:text-red-700" title="Quitar">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </td>
+            </tr>
+        </template>
+        {% else %}
+        <div class="p-4 rounded-xl bg-yellow-50 text-yellow-800 text-sm">
+            Las líneas no se pueden editar en una orden
+            <strong>{{ object.get_status_display|lower }}</strong>.
+        </div>
+        {% endif %}
 
         <div class="flex justify-end gap-3 pt-4">
             <a href="{% url 'purchases:purchaseorder_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>
-            <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium">Guardar</button>
+            <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium">Guardar orden</button>
         </div>
     </form>
 </div>
+
+{% if lines_editable %}
+<script>
+(function () {
+    var body = document.getElementById('lines-body');
+    var addBtn = document.getElementById('add-line');
+    var tpl = document.getElementById('empty-line-template');
+    var totalForms = document.getElementById('id_{{ formset.prefix }}-TOTAL_FORMS');
+    if (!body || !addBtn || !tpl || !totalForms) { return; }
+
+    addBtn.addEventListener('click', function () {
+        var index = parseInt(totalForms.value, 10);
+        var html = tpl.innerHTML.replace(/__prefix__/g, index);
+        var wrapper = document.createElement('tbody');
+        wrapper.innerHTML = html.trim();
+        body.appendChild(wrapper.firstElementChild);
+        totalForms.value = index + 1;
+    });
+
+    body.addEventListener('click', function (event) {
+        var btn = event.target.closest('.remove-line');
+        if (!btn) { return; }
+        if (body.querySelectorAll('.line-row').length <= 1) { return; }
+        btn.closest('.line-row').remove();
+        // Renumera los prefijos para que Django no vea huecos.
+        var rows = body.querySelectorAll('.line-row');
+        rows.forEach(function (row, i) {
+            row.querySelectorAll('input, select').forEach(function (field) {
+                ['name', 'id'].forEach(function (attr) {
+                    var value = field.getAttribute(attr);
+                    if (value) {
+                        field.setAttribute(attr, value.replace(/-\d+-/, '-' + i + '-'));
+                    }
+                });
+            });
+        });
+        totalForms.value = rows.length;
+    });
+})();
+</script>
+{% endif %}
 {% endblock %}

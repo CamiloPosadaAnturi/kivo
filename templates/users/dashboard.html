@@ -27,6 +27,10 @@
                    class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl flex items-center gap-2 transition-all">
                     <i class="fas fa-arrow-down"></i> Egresos
                 </a>
+                <a href="{% url 'purchases:purchaseorder_create' %}"
+                   class="px-6 py-3 btn-kivo text-white font-semibold rounded-xl flex items-center gap-2 transition-all">
+                    <i class="fas fa-file-invoice"></i> Nueva orden
+                </a>
             </div>
         </div>
     </div>
@@ -81,6 +85,49 @@
                 </div>
             </a>
 
+
+            <!-- Compras -->
+            <a href="{% url 'purchases:home' %}"
+               class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-orange-100 rounded-xl flex items-center justify-center group-hover:bg-orange-500 group-hover:text-white transition-all text-orange-600">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro">Compras</h3>
+                        <p class="text-sm text-kivo-gris">Proveedores y órdenes</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Inventario -->
+            <a href="{% url 'inventory:home' %}"
+               class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-kivo-petroleo/10 rounded-xl flex items-center justify-center group-hover:bg-kivo-petroleo group-hover:text-white transition-all text-kivo-petroleo">
+                        <i class="fas fa-box text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro">Inventario</h3>
+                        <p class="text-sm text-kivo-gris">Productos, bodegas y stock</p>
+                    </div>
+                </div>
+            </a>
+
+            <!-- Reportes -->
+            <a href="{% url 'reports:home' %}"
+               class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-500 group-hover:text-white transition-all text-purple-600">
+                        <i class="fas fa-chart-bar text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro">Reportes</h3>
+                        <p class="text-sm text-kivo-gris">Inventario y compras</p>
+                    </div>
+                </div>
+            </a>
+
             <!-- Nueva cuenta -->
             <a href="{% url 'bank_accounts:bankaccount_create' %}" 
                class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
@@ -105,54 +152,6 @@
         </h2>
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             
-            <!-- Compras -->
-            <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm opacity-60 cursor-not-allowed">
-                <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                        <i class="fas fa-shopping-cart text-xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-kivo-oscuro flex items-center gap-2">
-                            Compras
-                            <span class="text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
-                        </h3>
-                        <p class="text-sm text-kivo-gris">Ordenes y proveedores</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Inventario -->
-            <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm opacity-60 cursor-not-allowed">
-                <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                        <i class="fas fa-box text-xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-kivo-oscuro flex items-center gap-2">
-                            Inventario
-                            <span class="text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
-                        </h3>
-                        <p class="text-sm text-kivo-gris">Control de stock</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Reportes -->
-            <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm opacity-60 cursor-not-allowed">
-                <div class="flex items-center gap-4">
-                    <div class="w-14 h-14 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400">
-                        <i class="fas fa-chart-bar text-xl"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-kivo-oscuro flex items-center gap-2">
-                            Reportes
-                            <span class="text-xs bg-kivo-azul-claro text-kivo-petroleo px-2 py-0.5 rounded-full">Beta</span>
-                        </h3>
-                        <p class="text-sm text-kivo-gris">Analisis financiero</p>
-                    </div>
-                </div>
-            </div>
-
             <!-- Inteligencia IA -->
             <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm opacity-60 cursor-not-allowed">
                 <div class="flex items-center gap-4">
@@ -194,6 +193,26 @@
                 <p class="text-3xl font-bold text-kivo-oscuro">{{ total_accounts|default:"0" }}</p>
                 <p class="text-sm text-kivo-gris mt-1">Cuentas</p>
             </div>
+        </div>
+
+        <h3 class="text-sm font-semibold text-kivo-gris uppercase tracking-wider mt-6 mb-3">Compras e inventario</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <a href="{% url 'inventory:product_list' %}" class="text-center p-4 bg-kivo-menta rounded-xl block card-hover">
+                <p class="text-3xl font-bold text-kivo-petroleo">{{ total_products|default:"0" }}</p>
+                <p class="text-sm text-kivo-gris mt-1">Productos</p>
+            </a>
+            <a href="{% url 'reports:inventory_report' %}" class="text-center p-4 {% if low_stock_count %}bg-orange-50{% else %}bg-kivo-menta{% endif %} rounded-xl block card-hover">
+                <p class="text-3xl font-bold {% if low_stock_count %}text-orange-600{% else %}text-kivo-petroleo{% endif %}">{{ low_stock_count|default:"0" }}</p>
+                <p class="text-sm text-kivo-gris mt-1">Bajo stock</p>
+            </a>
+            <a href="{% url 'purchases:purchaseorder_list' %}" class="text-center p-4 bg-kivo-menta rounded-xl block card-hover">
+                <p class="text-3xl font-bold text-kivo-petroleo">{{ open_orders|default:"0" }}</p>
+                <p class="text-sm text-kivo-gris mt-1">Órdenes abiertas</p>
+            </a>
+            <a href="{% url 'reports:inventory_report' %}" class="text-center p-4 bg-kivo-azul-claro/30 rounded-xl block card-hover">
+                <p class="text-3xl font-bold text-kivo-oscuro">${{ inventory_value|default:"0"|floatformat:0 }}</p>
+                <p class="text-sm text-kivo-gris mt-1">Valor inventario</p>
+            </a>
         </div>
     </div>
 </div>

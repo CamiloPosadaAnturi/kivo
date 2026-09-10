@@ -9,7 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.views.generic.detail import SingleObjectMixin
 
 from core.mixins import TenantScopedMixin, RoleRequiredMixin
@@ -19,9 +19,17 @@ from .models import (
 )
 from .forms import (
     SupplierForm, PurchaseOrderForm, PurchaseOrderLineFormSet,
-    PurchaseReceiptForm, PurchaseReceiptLineForm, PurchaseInvoiceForm,
+    PurchaseReceiptForm, PurchaseInvoiceForm,
     build_purchase_receipt_line_formset,
 )
+
+
+# ---------------------------------------------------------------------------
+# Module home
+# ---------------------------------------------------------------------------
+
+class PurchasesHomeView(LoginRequiredMixin, TemplateView):
+    template_name = 'purchases/compras_home.html'
 
 
 # ---------------------------------------------------------------------------
@@ -41,22 +49,43 @@ class SupplierDetailView(LoginRequiredMixin, TenantScopedMixin, DetailView):
     context_object_name = 'supplier'
 
 
-class SupplierCreateView(LoginRequiredMixin, TenantScopedMixin, CreateView):
+class TenantFormKwargsMixin:
+    """Pasa el usuario al form para que TenantModelForm filtre por negocio."""
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+
+class SupplierCreateView(LoginRequiredMixin, TenantScopedMixin, TenantFormKwargsMixin, CreateView):
     model = Supplier
     form_class = SupplierForm
     template_name = 'purchases/supplier_form.html'
     success_url = reverse_lazy('purchases:supplier_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['title'] = 'Nuevo proveedor'
+        ctx['submit_text'] = 'Crear proveedor'
+        return ctx
 
     def form_valid(self, form):
         messages.success(self.request, 'Proveedor creado correctamente.')
         return super().form_valid(form)
 
 
-class SupplierUpdateView(LoginRequiredMixin, TenantScopedMixin, UpdateView):
+class SupplierUpdateView(LoginRequiredMixin, TenantScopedMixin, TenantFormKwargsMixin, UpdateView):
     model = Supplier
     form_class = SupplierForm
     template_name = 'purchases/supplier_form.html'
     success_url = reverse_lazy('purchases:supplier_list')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['title'] = f'Editar {self.object.name}'
+        ctx['submit_text'] = 'Guardar cambios'
+        return ctx
 
     def form_valid(self, form):
         messages.success(self.request, 'Proveedor actualizado correctamente.')
@@ -95,7 +124,58 @@ class PurchaseOrderDetailView(LoginRequiredMixin, TenantScopedMixin, DetailView)
         return ctx
 
 
-class PurchaseOrderCreateView(LoginRequiredMixin, TenantScopedMixin, CreateView):
+class PurchaseOrderLinesMixin(TenantFormKwargsMixin):
+    """
+    Guarda la orden junto con sus líneas.
+
+    Sin esto se podía crear una orden vacía y no había forma de agregarle
+    líneas desde la interfaz: PurchaseOrderLineFormSet estaba importado pero
+    nunca se usaba.
+    """
+    editable_statuses = ('draft', 'sent')
+
+    def lines_are_editable(self):
+        obj = getattr(self, 'object', None)
+        if obj is None or obj.pk is None:
+            return True
+        return obj.status in self.editable_statuses
+
+    def get_line_formset(self, data=None):
+        return PurchaseOrderLineFormSet(
+            data,
+            instance=self.object,
+            form_kwargs={'business': getattr(self.request.user, 'business', None)},
+        )
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['lines_editable'] = self.lines_are_editable()
+        if ctx['lines_editable'] and 'formset' not in ctx:
+            ctx['formset'] = self.get_line_formset()
+        return ctx
+
+    def post(self, request, *args, **kwargs):
+        self.object = self.get_object() if hasattr(self, 'get_object') and kwargs.get('pk') else None
+        form = self.get_form()
+
+        if not self.lines_are_editable():
+            if form.is_valid():
+                return self.form_valid(form)
+            return self.form_invalid(form)
+
+        formset = self.get_line_formset(data=request.POST)
+        if form.is_valid() and formset.is_valid():
+            with transaction.atomic():
+                # self.form_valid recorre la cadena completa (TenantScopedMixin
+                # asigna business, la vista asigna created_by).
+                response = self.form_valid(form)
+                formset.instance = self.object
+                formset.save()
+            return response
+        return self.render_to_response(self.get_context_data(form=form, formset=formset))
+
+
+class PurchaseOrderCreateView(LoginRequiredMixin, TenantScopedMixin, PurchaseOrderLinesMixin, CreateView):
     model = PurchaseOrder
     form_class = PurchaseOrderForm
     template_name = 'purchases/purchaseorder_form.html'
@@ -106,16 +186,21 @@ class PurchaseOrderCreateView(LoginRequiredMixin, TenantScopedMixin, CreateView)
         messages.success(self.request, 'Orden de compra creada correctamente.')
         return super().form_valid(form)
 
+    def get_success_url(self):
+        return self.object.get_absolute_url()
 
-class PurchaseOrderUpdateView(LoginRequiredMixin, TenantScopedMixin, UpdateView):
+
+class PurchaseOrderUpdateView(LoginRequiredMixin, TenantScopedMixin, PurchaseOrderLinesMixin, UpdateView):
     model = PurchaseOrder
     form_class = PurchaseOrderForm
     template_name = 'purchases/purchaseorder_form.html'
-    success_url = reverse_lazy('purchases:purchaseorder_list')
 
     def form_valid(self, form):
         messages.success(self.request, 'Orden de compra actualizada correctamente.')
         return super().form_valid(form)
+
+    def get_success_url(self):
+        return self.object.get_absolute_url()
 
 
 class PurchaseOrderDeleteView(LoginRequiredMixin, TenantScopedMixin, RoleRequiredMixin, DeleteView):

@@ -114,7 +114,7 @@ class IncomeCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.user = self.request.user
         form.instance.business = current_business(self.request)
-        messages.success(self.request, 'Income created successfully.')
+        messages.success(self.request, 'Ingreso registrado correctamente.')
         return super().form_valid(form)
 
 
@@ -133,7 +133,7 @@ class IncomeCreateAjaxView(LoginRequiredMixin, View):
             income.user = request.user
             income.business = current_business(request)
             income.save()
-            return JsonResponse({'success': True, 'message': 'Income created successfully.'})
+            return JsonResponse({'success': True, 'message': 'Ingreso registrado correctamente.'})
         else:
             errors = {}
             for field, field_errors in form.errors.items():
@@ -189,7 +189,7 @@ class IncomeUpdateView(LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        messages.success(self.request, 'Income updated successfully.')
+        messages.success(self.request, 'Ingreso actualizado correctamente.')
         return super().form_valid(form)
 
 
@@ -207,5 +207,5 @@ class IncomeDeleteView(LoginRequiredMixin, DeleteView):
         return Income.objects.filter(business=business)
 
     def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Income deleted successfully.')
+        messages.success(self.request, 'Ingreso eliminado correctamente.')
         return super().delete(request, *args, **kwargs)

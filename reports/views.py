@@ -1,9 +1,13 @@
-from django.views.generic import ListView
+from django.views.generic import ListView, TemplateView
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db.models import F, Sum, Q, ExpressionWrapper, DecimalField
 from core.mixins import TenantScopedMixin
 from inventory.models import Product
 from purchases.models import PurchaseOrder
+
+class ReportsHomeView(LoginRequiredMixin, TemplateView):
+    template_name = 'reports/reportes_home.html'
+
 
 class InventoryReportView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = Product

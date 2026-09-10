@@ -66,10 +66,10 @@
                 {% for line in object.lines.all %}
                 <tr>
                     <td class="px-4 py-3 text-sm font-medium">{{ line.product }}</td>
-                    <td class="px-4 py-3 text-sm text-right">{{ line.quantity }}</td>
+                    <td class="px-4 py-3 text-sm text-right">{{ line.quantity|floatformat:"-3" }}</td>
                     <td class="px-4 py-3 text-sm text-right">${{ line.unit_price }}</td>
-                    <td class="px-4 py-3 text-sm text-right">{{ line.received_qty }}</td>
-                    <td class="px-4 py-3 text-sm text-right font-semibold {% if line.remaining > 0 %}text-orange-600{% else %}text-green-600{% endif %}">{{ line.remaining }}</td>
+                    <td class="px-4 py-3 text-sm text-right">{{ line.received_qty|floatformat:"-3" }}</td>
+                    <td class="px-4 py-3 text-sm text-right font-semibold {% if line.remaining > 0 %}text-orange-600{% else %}text-green-600{% endif %}">{{ line.remaining|floatformat:"-3" }}</td>
                 </tr>
                 {% empty %}
                 <tr>

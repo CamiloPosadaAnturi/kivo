@@ -114,7 +114,7 @@ class ExpenseCreateView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         form.instance.user = self.request.user
         form.instance.business = current_business(self.request)
-        messages.success(self.request, 'Expense created successfully.')
+        messages.success(self.request, 'Egreso registrado correctamente.')
         return super().form_valid(form)
 
 
@@ -133,7 +133,7 @@ class ExpenseCreateAjaxView(LoginRequiredMixin, View):
             expense.user = request.user
             expense.business = current_business(request)
             expense.save()
-            return JsonResponse({'success': True, 'message': 'Expense created successfully.'})
+            return JsonResponse({'success': True, 'message': 'Egreso registrado correctamente.'})
         else:
             errors = {}
             for field, field_errors in form.errors.items():
@@ -189,7 +189,7 @@ class ExpenseUpdateView(LoginRequiredMixin, UpdateView):
         return context
 
     def form_valid(self, form):
-        messages.success(self.request, 'Expense updated successfully.')
+        messages.success(self.request, 'Egreso actualizado correctamente.')
         return super().form_valid(form)
 
 
@@ -207,5 +207,5 @@ class ExpenseDeleteView(LoginRequiredMixin, DeleteView):
         return Expense.objects.filter(business=business)
 
     def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Expense deleted successfully.')
+        messages.success(self.request, 'Egreso eliminado correctamente.')
         return super().delete(request, *args, **kwargs)

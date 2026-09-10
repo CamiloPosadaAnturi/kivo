@@ -6,7 +6,7 @@ from django.http import HttpResponse
 from django.urls import reverse_lazy
 from django.core.exceptions import ValidationError
 from django.views.generic import (
-    ListView, CreateView, UpdateView, DetailView, DeleteView, FormView,
+    ListView, CreateView, UpdateView, DetailView, DeleteView, FormView, TemplateView,
 )
 
 from core.mixins import TenantScopedMixin
@@ -19,6 +19,14 @@ from .models import (
     Product, InventoryMovement,
 )
 from .services import apply_stock_count, apply_stock_movement
+
+
+# ---------------------------------------------------------------------------
+# Module home
+# ---------------------------------------------------------------------------
+
+class InventoryHomeView(LoginRequiredMixin, TemplateView):
+    template_name = 'inventory/inventario_home.html'
 
 
 # ---------------------------------------------------------------------------

@@ -14,17 +14,32 @@
     </div>
     {% endif %}
 
+    {% if purchase_order %}
+    <p class="text-sm text-kivo-gris -mt-4 mb-6">
+        Orden <strong>{{ purchase_order.number }}</strong> · {{ purchase_order.supplier }}
+    </p>
+    {% endif %}
+
     <form method="post" class="space-y-6">
         {% csrf_token %}
-        {% for field in form %}
-        <div>
-            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-kivo-pizarra mb-1">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}
-            <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
-            {% endif %}
+
+        {% if form.non_field_errors %}
+        <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
         </div>
-        {% endfor %}
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for field in form %}
+                {% if field.is_hidden %}
+                    {{ field }}
+                {% else %}
+                    <div{% if field.name == 'notes' %} class="md:col-span-2"{% endif %}>
+                        {% include 'includes/field.html' with field=field %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
 
         <div class="flex justify-end gap-3 pt-4">
             <a href="{% url 'purchases:purchaseorder_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>

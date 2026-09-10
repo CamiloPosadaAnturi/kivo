@@ -76,9 +76,9 @@
                                 {{ line.product }}
                                 {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
                             </td>
-                            <td class="px-4 py-3 text-sm text-right">{{ line.quantity }}</td>
-                            <td class="px-4 py-3 text-sm text-right">{{ line.received_qty }}</td>
-                            <td class="px-4 py-3 text-sm text-right font-semibold text-kivo-petroleo">{{ line.remaining }}</td>
+                            <td class="px-4 py-3 text-sm text-right">{{ line.quantity|floatformat:"-3" }}</td>
+                            <td class="px-4 py-3 text-sm text-right">{{ line.received_qty|floatformat:"-3" }}</td>
+                            <td class="px-4 py-3 text-sm text-right font-semibold text-kivo-petroleo">{{ line.remaining|floatformat:"-3" }}</td>
                             <td class="px-4 py-3">
                                 {{ line_form.quantity }}
                                 {% if line_form.quantity.errors %}

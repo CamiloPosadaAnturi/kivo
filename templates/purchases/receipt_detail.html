@@ -16,7 +16,7 @@
             <p class="mt-1 font-medium text-kivo-oscuro">{{ object.received_date }}</p>
         </div>
         <div>
-            <p class="text-xs text-kivo-gris uppercase tracking-wider">Almacén</p>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Bodega</p>
             <p class="mt-1 font-medium text-kivo-oscuro">{{ object.warehouse }}</p>
         </div>
     </div>
@@ -35,7 +35,7 @@
                 {% for line in object.lines.all %}
                 <tr>
                     <td class="px-4 py-3 text-sm font-medium">{{ line.product }}</td>
-                    <td class="px-4 py-3 text-sm text-right">{{ line.quantity }}</td>
+                    <td class="px-4 py-3 text-sm text-right">{{ line.quantity|floatformat:"-3" }}</td>
                     <td class="px-4 py-3 text-sm text-right">${{ line.unit_cost }}</td>
                 </tr>
                 {% endfor %}

@@ -1,12 +1,14 @@
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum
+from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 from django.shortcuts import render, redirect
 from django.contrib import messages
 
 from incomes.models import Income
 from expenses.models import Expense
 from bank_accounts.models import BankAccount
+from inventory.models import Product
+from purchases.models import PurchaseOrder
 
 
 def index(request):
@@ -48,6 +50,25 @@ def dashboard(request):
     total_expense = expenses.aggregate(total=Sum('amount'))['total'] or 0
     total_transactions = incomes.count() + expenses.count()
 
+    # Operación: compras e inventario
+    if business is not None:
+        products = Product.objects.filter(business=business, is_active=True)
+        total_products = products.count()
+        low_stock_count = products.filter(current_stock__lte=F('min_stock')).count()
+        inventory_value = products.aggregate(
+            total=Sum(ExpressionWrapper(
+                F('current_stock') * F('purchase_price'),
+                output_field=DecimalField(max_digits=18, decimal_places=2),
+            ))
+        )['total'] or 0
+        open_orders = PurchaseOrder.objects.filter(
+            business=business,
+            status__in=['draft', 'sent', 'approved', 'partial'],
+        ).count()
+    else:
+        total_products = low_stock_count = open_orders = 0
+        inventory_value = 0
+
     context = {
         'user': user,
         'business': business,
@@ -56,5 +77,9 @@ def dashboard(request):
         'total_expense': total_expense,
         'total_balance': total_income - total_expense,
         'total_accounts': total_accounts,
+        'total_products': total_products,
+        'low_stock_count': low_stock_count,
+        'inventory_value': inventory_value,
+        'open_orders': open_orders,
     }
     return render(request, 'users/dashboard.html', context)

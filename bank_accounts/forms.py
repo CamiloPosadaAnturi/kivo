@@ -1,8 +1,10 @@
 from django import forms
+
+from core.forms import StyledFormMixin
 from .models import BankAccount
 
 
-class BankAccountForm(forms.ModelForm):
+class BankAccountForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = BankAccount
         fields = ['name', 'bank_name', 'account_number', 'opening_balance']
@@ -27,7 +29,7 @@ class BankAccountForm(forms.ModelForm):
         }
 
 
-class BankAccountUpdateForm(forms.ModelForm):
+class BankAccountUpdateForm(StyledFormMixin, forms.ModelForm):
     class Meta:
         model = BankAccount
         fields = ['name', 'bank_name', 'account_number', 'status']
