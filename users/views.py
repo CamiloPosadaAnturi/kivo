@@ -31,24 +31,30 @@ def demo_login(request):
 @login_required
 def dashboard(request):
     user = request.user
-    
-    incomes = Income.objects.filter(user=user)
-    expenses = Expense.objects.filter(user=user)
-    
+    business = getattr(user, 'business', None)
+
+    # El dashboard es del negocio, no del usuario: dos empleados del mismo
+    # negocio ven las mismas cifras.
+    if business is not None:
+        incomes = Income.objects.filter(business=business)
+        expenses = Expense.objects.filter(business=business)
+        total_accounts = BankAccount.objects.filter(business=business).count()
+    else:
+        incomes = Income.objects.none()
+        expenses = Expense.objects.none()
+        total_accounts = 0
+
     total_income = incomes.aggregate(total=Sum('amount'))['total'] or 0
     total_expense = expenses.aggregate(total=Sum('amount'))['total'] or 0
     total_transactions = incomes.count() + expenses.count()
-    
-    if hasattr(user, 'business') and user.business:
-        total_accounts = BankAccount.objects.filter(business=user.business).count()
-    else:
-        total_accounts = 0
-    
+
     context = {
         'user': user,
+        'business': business,
         'total_transactions': total_transactions,
         'total_income': total_income,
         'total_expense': total_expense,
+        'total_balance': total_income - total_expense,
         'total_accounts': total_accounts,
     }
     return render(request, 'users/dashboard.html', context)

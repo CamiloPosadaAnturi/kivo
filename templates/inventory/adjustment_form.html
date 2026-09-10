@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Ajustar Inventario{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <h1 class="text-2xl font-bold text-kivo-oscuro mb-1">{{ title }}</h1>
+    <p class="text-sm text-kivo-gris mb-6">
+        Digita la cantidad real que contaste en bodega. Kivo deja el producto en esa
+        cantidad y guarda la diferencia como movimiento de ajuste.
+    </p>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
+        {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-kivo-pizarra mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% if field.help_text %}
+            <p class="text-xs text-kivo-gris mt-1">{{ field.help_text }}</p>
+            {% endif %}
+            {% if field.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+            {% endif %}
+        </div>
+        {% if field.name == 'product' %}
+        <div class="bg-gray-50 rounded-xl px-4 py-3 flex items-center justify-between">
+            <span class="text-sm text-kivo-pizarra">Stock según el sistema</span>
+            <span id="stock-actual" class="text-lg font-bold text-kivo-petroleo">—</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+
+        <div class="flex justify-end gap-3 pt-4">
+            <a href="{% url 'inventory:movement_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium">{{ submit_text }}</button>
+        </div>
+    </form>
+</div>
+
+{{ stock_by_product|json_script:"stock-por-producto" }}
+<script>
+(function () {
+    var node = document.getElementById('stock-por-producto');
+    var select = document.getElementById('id_product');
+    var badge = document.getElementById('stock-actual');
+    if (!node || !select || !badge) { return; }
+    var stock = JSON.parse(node.textContent);
+    function refresh() {
+        var value = stock[select.value];
+        badge.textContent = (value === undefined) ? '—' : value;
+    }
+    select.addEventListener('change', refresh);
+    refresh();
+})();
+</script>
+{% endblock %}

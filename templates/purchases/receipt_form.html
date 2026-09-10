@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+{% block title %}Recepción de Mercancía{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-kivo-oscuro">Registrar recepción de mercancía</h1>
+        <p class="text-sm text-kivo-gris mt-1">
+            Orden <strong>{{ purchase_order.number }}</strong> ·
+            {{ purchase_order.supplier }} ·
+            estado {{ purchase_order.get_status_display }}
+        </p>
+    </div>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {% for field in form %}
+                {% if field.is_hidden %}
+                    {{ field }}
+                {% else %}
+                <div{% if field.name == 'notes' %} class="md:col-span-2"{% endif %}>
+                    <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-kivo-pizarra mb-1">{{ field.label }}</label>
+                    {{ field }}
+                    {% if field.errors %}
+                    <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <div>
+            <h2 class="font-bold text-kivo-oscuro mb-3">Líneas por recibir</h2>
+
+            {{ formset.management_form }}
+            {% if formset.non_form_errors %}
+            <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm mb-3">
+                {% for error in formset.non_form_errors %}<p>{{ error }}</p>{% endfor %}
+            </div>
+            {% endif %}
+
+            <div class="overflow-x-auto border border-kivo-azul-claro/50 rounded-xl">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead>
+                        <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                            <th class="px-4 py-3 text-left">Producto</th>
+                            <th class="px-4 py-3 text-right">Pedido</th>
+                            <th class="px-4 py-3 text-right">Ya recibido</th>
+                            <th class="px-4 py-3 text-right">Pendiente</th>
+                            <th class="px-4 py-3 text-right w-40">Recibir ahora</th>
+                            <th class="px-4 py-3 text-right w-40">Costo unitario</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for line_form in formset %}
+                        {% with line=line_form.order_line_obj %}
+                        <tr>
+                            <td class="px-4 py-3 text-sm font-medium text-kivo-oscuro">
+                                {{ line.product }}
+                                {% for hidden in line_form.hidden_fields %}{{ hidden }}{% endfor %}
+                            </td>
+                            <td class="px-4 py-3 text-sm text-right">{{ line.quantity }}</td>
+                            <td class="px-4 py-3 text-sm text-right">{{ line.received_qty }}</td>
+                            <td class="px-4 py-3 text-sm text-right font-semibold text-kivo-petroleo">{{ line.remaining }}</td>
+                            <td class="px-4 py-3">
+                                {{ line_form.quantity }}
+                                {% if line_form.quantity.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ line_form.quantity.errors.0 }}</p>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3">
+                                {{ line_form.unit_cost }}
+                                {% if line_form.unit_cost.errors %}
+                                <p class="text-red-500 text-xs mt-1">{{ line_form.unit_cost.errors.0 }}</p>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="px-4 py-6 text-center text-kivo-gris text-sm">
+                                No hay líneas pendientes por recibir en esta orden.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p class="text-xs text-kivo-gris mt-2">
+                Deja la cantidad en 0 (o vacía) para las líneas que no llegaron en este despacho.
+                El stock se actualiza al guardar.
+            </p>
+        </div>
+
+        <div class="flex justify-end gap-3 pt-4">
+            <a href="{% url 'purchases:purchaseorder_detail' purchase_order.pk %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium">Registrar recepción</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

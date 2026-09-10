@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block title %}Módulo de Compras{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold text-kivo-oscuro mb-8">Módulo de Compras</h1>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Proveedores -->
+        <a href="{% url 'purchases:supplier_list' %}" class="bg-white rounded-2xl p-8 shadow-sm border border-kivo-azul-claro/50 card-hover flex flex-col items-center text-center">
+            <div class="w-16 h-16 bg-kivo-azul-claro rounded-full flex items-center justify-center mb-4 text-kivo-petroleo">
+                <i class="fas fa-truck text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-kivo-oscuro mb-2">Proveedores</h3>
+            <p class="text-sm text-kivo-gris">Gestión de proveedores y contactos.</p>
+        </a>
+
+        <!-- Órdenes de Compra -->
+        <a href="{% url 'purchases:purchaseorder_list' %}" class="bg-white rounded-2xl p-8 shadow-sm border border-kivo-azul-claro/50 card-hover flex flex-col items-center text-center">
+            <div class="w-16 h-16 bg-kivo-azul-claro rounded-full flex items-center justify-center mb-4 text-kivo-petroleo">
+                <i class="fas fa-file-invoice text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-kivo-oscuro mb-2">Órdenes de Compra</h3>
+            <p class="text-sm text-kivo-gris">Crear y administrar órdenes de compra.</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

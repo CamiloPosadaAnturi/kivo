@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Órdenes de Compra{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-kivo-oscuro">Órdenes de Compra</h1>
+        <a href="{% url 'purchases:purchaseorder_create' %}" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+            <i class="fas fa-plus"></i> Nueva Orden
+        </a>
+    </div>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100">
+            <thead>
+                <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                    <th class="px-6 py-3 text-left">Número</th>
+                    <th class="px-6 py-3 text-left">Proveedor</th>
+                    <th class="px-6 py-3 text-left">Fecha</th>
+                    <th class="px-6 py-3 text-center">Estado</th>
+                    <th class="px-6 py-3 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for po in object_list %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm font-medium text-kivo-oscuro font-mono">{{ po.number }}</td>
+                    <td class="px-6 py-4 text-sm text-kivo-gris">{{ po.supplier }}</td>
+                    <td class="px-6 py-4 text-sm text-kivo-oscuro">{{ po.order_date }}</td>
+                    <td class="px-6 py-4 text-center">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium bg-kivo-azul-claro text-kivo-petroleo">
+                            {{ po.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 text-center space-x-2">
+                        <a href="{% url 'purchases:purchaseorder_detail' po.pk %}" class="text-kivo-petroleo hover:text-kivo-oscuro"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'purchases:purchaseorder_update' po.pk %}" class="text-yellow-600 hover:text-yellow-800"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'purchases:purchaseorder_delete' po.pk %}" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-kivo-gris">
+                        No hay órdenes de compra registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

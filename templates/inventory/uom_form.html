@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block title %}{{ title }} Unidad{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <h1 class="text-2xl font-bold text-kivo-oscuro mb-6">{{ title }}</h1>
+    
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-6">
+        {% csrf_token %}
+        {% for field in form %}
+        <div>
+            <label for="{{ field.id_for_label }}" class="block text-sm font-medium text-kivo-pizarra mb-1">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+            <p class="text-red-500 text-xs mt-1">{{ field.errors.0 }}</p>
+            {% endif %}
+        </div>
+        {% endfor %}
+        
+        <div class="flex justify-end gap-3 pt-4">
+            <a href="{% url 'inventory:uom_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium">Guardar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

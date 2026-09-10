@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Reportes{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold text-kivo-oscuro mb-8">Módulo de Reportes</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Reporte Inventario -->
+        <a href="{% url 'reports:inventory_report' %}" class="bg-white rounded-2xl p-8 shadow-sm border border-kivo-azul-claro/50 card-hover flex flex-col items-center text-center">
+            <div class="w-16 h-16 bg-kivo-azul-claro rounded-full flex items-center justify-center mb-4 text-kivo-petroleo">
+                <i class="fas fa-boxes text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-kivo-oscuro mb-2">Reporte de Inventario</h3>
+            <p class="text-sm text-kivo-gris">Valores, stocks y estado de los productos.</p>
+        </a>
+        
+        <!-- Reporte Compras -->
+        <a href="{% url 'reports:purchases_report' %}" class="bg-white rounded-2xl p-8 shadow-sm border border-kivo-azul-claro/50 card-hover flex flex-col items-center text-center">
+            <div class="w-16 h-16 bg-kivo-azul-claro rounded-full flex items-center justify-center mb-4 text-kivo-petroleo">
+                <i class="fas fa-shopping-cart text-3xl"></i>
+            </div>
+            <h3 class="text-lg font-bold text-kivo-oscuro mb-2">Reporte de Compras</h3>
+            <p class="text-sm text-kivo-gris">Historial de órdenes de compra y proveedores.</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

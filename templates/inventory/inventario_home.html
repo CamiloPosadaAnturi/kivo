@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Inventario{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto">
+    <h1 class="text-3xl font-bold text-kivo-oscuro mb-8">Módulo de Inventario</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Productos -->
+        <a href="{% url 'inventory:product_list' %}" class="bg-white rounded-2xl p-6 shadow-sm border border-kivo-azul-claro/50 card-hover flex flex-col items-center text-center">
+            <div class="w-14 h-14 bg-kivo-azul-claro rounded-xl flex items-center justify-center mb-4 text-kivo-petroleo">
+                <i class="fas fa-box-open text-2xl"></i>
+            </div>
+            <h3 class="font-bold text-kivo-oscuro">Productos</h3>
+            <p class="text-xs text-kivo-gris mt-1">Catálogo de productos</p>
+        </a>
+        
+        <!-- Almacenes -->
+        <a href="{% url 'inventory:warehouse_list' %}" class="bg-white rounded-2xl p-6 shadow-sm border border-kivo-azul-claro/50 card-hover flex flex-col items-center text-center">
+            <div class="w-14 h-14 bg-kivo-azul-claro rounded-xl flex items-center justify-center mb-4 text-kivo-petroleo">
+                <i class="fas fa-warehouse text-2xl"></i>
+            </div>
+            <h3 class="font-bold text-kivo-oscuro">Almacenes</h3>
+            <p class="text-xs text-kivo-gris mt-1">Gestión de bodegas</p>
+        </a>
+        
+        <!-- Movimientos -->
+        <a href="{% url 'inventory:movement_list' %}" class="bg-white rounded-2xl p-6 shadow-sm border border-kivo-azul-claro/50 card-hover flex flex-col items-center text-center">
+            <div class="w-14 h-14 bg-kivo-azul-claro rounded-xl flex items-center justify-center mb-4 text-kivo-petroleo">
+                <i class="fas fa-exchange-alt text-2xl"></i>
+            </div>
+            <h3 class="font-bold text-kivo-oscuro">Movimientos</h3>
+            <p class="text-xs text-kivo-gris mt-1">Entradas y salidas</p>
+        </a>
+        
+        <!-- Categorías -->
+        <a href="{% url 'inventory:category_list' %}" class="bg-white rounded-2xl p-6 shadow-sm border border-kivo-azul-claro/50 card-hover flex flex-col items-center text-center">
+            <div class="w-14 h-14 bg-kivo-azul-claro rounded-xl flex items-center justify-center mb-4 text-kivo-petroleo">
+                <i class="fas fa-tags text-2xl"></i>
+            </div>
+            <h3 class="font-bold text-kivo-oscuro">Categorías</h3>
+            <p class="text-xs text-kivo-gris mt-1">Clasificación de artículos</p>
+        </a>
+    </div>
+</div>
+{% endblock %}

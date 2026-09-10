@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Reporte de Compras{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <h1 class="text-2xl font-bold text-kivo-oscuro mb-6">Reporte de Compras</h1>
+
+    <!-- Filtros -->
+    <div class="bg-gray-50 p-4 rounded-xl border border-kivo-azul-claro/50 mb-8">
+        <form method="get" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-xs font-medium text-kivo-pizarra mb-1">Fecha Inicio</label>
+                <input type="date" name="start_date" value="{{ request.GET.start_date }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-kivo-petroleo focus:border-kivo-petroleo">
+            </div>
+            <div>
+                <label class="block text-xs font-medium text-kivo-pizarra mb-1">Fecha Fin</label>
+                <input type="date" name="end_date" value="{{ request.GET.end_date }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-kivo-petroleo focus:border-kivo-petroleo">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium w-full">Filtrar</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100">
+            <thead>
+                <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                    <th class="px-4 py-3 text-left">Número</th>
+                    <th class="px-4 py-3 text-left">Fecha</th>
+                    <th class="px-4 py-3 text-left">Proveedor</th>
+                    <th class="px-4 py-3 text-center">Estado</th>
+                    <th class="px-4 py-3 text-right">Descuento</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for po in purchases %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-kivo-oscuro font-mono">{{ po.number }}</td>
+                    <td class="px-4 py-3 text-sm text-kivo-oscuro">{{ po.order_date }}</td>
+                    <td class="px-4 py-3 text-sm text-kivo-gris">{{ po.supplier }}</td>
+                    <td class="px-4 py-3 text-center">
+                        <span class="px-2 py-1 rounded-full text-xs font-medium bg-kivo-azul-claro text-kivo-petroleo">
+                            {{ po.get_status_display }}
+                        </span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-right text-kivo-oscuro">${{ po.discount }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="px-6 py-12 text-center text-kivo-gris">
+                        No hay órdenes de compra para el rango seleccionado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

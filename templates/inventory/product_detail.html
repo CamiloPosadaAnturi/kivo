@@ -1,0 +1,65 @@
+{% extends 'base.html' %}
+{% block title %}Detalles Producto{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <div class="flex justify-between items-start mb-6">
+        <h1 class="text-2xl font-bold text-kivo-oscuro">{{ object.name }}</h1>
+        <div class="space-x-2">
+            <a href="{% url 'inventory:product_update' object.pk %}" class="text-yellow-600 hover:text-yellow-800"><i class="fas fa-edit"></i></a>
+            <a href="{% url 'inventory:product_delete' object.pk %}" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">SKU</p>
+            <p class="mt-1 font-medium text-kivo-oscuro font-mono">{{ object.sku }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Categoría</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.category|default:"-" }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Unidad de Medida</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.uom }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Estado</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">
+                {% if object.is_active %}
+                <span class="text-green-600 bg-green-50 px-2 py-1 rounded-full text-xs">Activo</span>
+                {% else %}
+                <span class="text-red-600 bg-red-50 px-2 py-1 rounded-full text-xs">Inactivo</span>
+                {% endif %}
+            </p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Stock Actual</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.current_stock }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Stock Mínimo</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.min_stock }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Precio Compra</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">${{ object.purchase_price }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Precio Venta</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">${{ object.sale_price }}</p>
+        </div>
+    </div>
+    
+    {% if object.description %}
+    <div class="mt-6 pt-4 border-t border-kivo-azul-claro/50">
+        <p class="text-xs text-kivo-gris uppercase tracking-wider mb-2">Descripción</p>
+        <p class="text-sm text-kivo-pizarra">{{ object.description }}</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-8 flex justify-end">
+        <a href="{% url 'inventory:product_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Volver a la lista</a>
+    </div>
+</div>
+{% endblock %}

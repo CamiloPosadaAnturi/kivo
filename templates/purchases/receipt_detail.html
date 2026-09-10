@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Detalles Recepción{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <div class="flex justify-between items-start mb-6">
+        <h1 class="text-2xl font-bold text-kivo-oscuro">Recepción {{ object.number }}</h1>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Orden de Compra</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.purchase_order.number }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Fecha Recepción</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.received_date }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Almacén</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.warehouse }}</p>
+        </div>
+    </div>
+
+    <h3 class="font-bold text-kivo-oscuro mb-3">Ítems Recibidos</h3>
+    <div class="overflow-x-auto mb-6">
+        <table class="min-w-full divide-y divide-gray-100">
+            <thead>
+                <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                    <th class="px-4 py-2 text-left">Producto</th>
+                    <th class="px-4 py-2 text-right">Cantidad</th>
+                    <th class="px-4 py-2 text-right">Costo Unitario</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for line in object.lines.all %}
+                <tr>
+                    <td class="px-4 py-3 text-sm font-medium">{{ line.product }}</td>
+                    <td class="px-4 py-3 text-sm text-right">{{ line.quantity }}</td>
+                    <td class="px-4 py-3 text-sm text-right">${{ line.unit_cost }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-8 flex justify-end">
+        <a href="{% url 'purchases:receipt_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Volver a la lista</a>
+    </div>
+</div>
+{% endblock %}

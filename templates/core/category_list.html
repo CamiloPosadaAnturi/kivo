@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Categorías{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-kivo-oscuro">
+                <i class="fas fa-tags text-kivo-petroleo mr-2"></i>Categorías
+            </h1>
+            <p class="text-kivo-gris mt-1">Organiza tus ingresos y gastos por categoría.</p>
+        </div>
+        <a href="{% url 'core:category_create' %}" class="px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl flex items-center gap-2 hover:opacity-90 transition-all whitespace-nowrap">
+            <i class="fas fa-plus"></i> Nueva categoría
+        </a>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <div class="flex border-b border-gray-100">
+            <a href="?tab=income"
+               class="flex-1 sm:flex-none px-6 py-4 text-sm font-semibold transition-colors border-b-2 flex items-center justify-center gap-2 {% if active_tab == 'income' %}border-green-500 text-green-600{% else %}border-transparent text-kivo-gris hover:text-kivo-oscuro{% endif %}">
+                <i class="fas fa-arrow-up"></i> Ingresos
+                <span class="px-2 py-0.5 text-xs rounded-full {% if active_tab == 'income' %}bg-green-100 text-green-700{% else %}bg-gray-100 text-kivo-gris{% endif %}">{{ income_categories|length }}</span>
+            </a>
+            <a href="?tab=expense"
+               class="flex-1 sm:flex-none px-6 py-4 text-sm font-semibold transition-colors border-b-2 flex items-center justify-center gap-2 {% if active_tab == 'expense' %}border-red-500 text-red-600{% else %}border-transparent text-kivo-gris hover:text-kivo-oscuro{% endif %}">
+                <i class="fas fa-arrow-down"></i> Egresos
+                <span class="px-2 py-0.5 text-xs rounded-full {% if active_tab == 'expense' %}bg-red-100 text-red-700{% else %}bg-gray-100 text-kivo-gris{% endif %}">{{ expense_categories|length }}</span>
+            </a>
+        </div>
+
+        {% if active_tab == 'income' %}
+            {% with cats=income_categories accent='green' icon='fa-arrow-up' %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+                {% for cat in cats %}
+                <div class="bg-white border-2 border-green-100 rounded-2xl p-5 hover:shadow-md transition-all flex items-center justify-between {% if not cat.is_active %}opacity-50{% endif %}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center shrink-0">
+                            <i class="fas {{ icon }} text-green-600"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-semibold text-kivo-oscuro truncate">{{ cat.name }}</p>
+                            {% if not cat.is_active %}
+                            <span class="text-xs text-kivo-gris">Inactiva</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex gap-1 shrink-0">
+                        <a href="{% url 'core:category_update' cat.pk %}" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all" title="Editar"><i class="fas fa-edit text-sm"></i></a>
+                        <a href="{% url 'core:category_delete' cat.pk %}" class="p-2 text-kivo-gris hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Eliminar"><i class="fas fa-trash text-sm"></i></a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full p-12 text-center">
+                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas {{ icon }} text-3xl text-green-500"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-2">No hay categorías de ingreso</h3>
+                    <p class="text-kivo-gris mb-6 max-w-md mx-auto">Crea tu primera categoría de ingresos para organizar tus movimientos.</p>
+                    <a href="{% url 'core:category_create' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl hover:opacity-90 transition-all">
+                        <i class="fas fa-plus"></i> Nueva categoría
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endwith %}
+        {% else %}
+            {% with cats=expense_categories icon='fa-arrow-down' %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 p-6">
+                {% for cat in cats %}
+                <div class="bg-white border-2 border-red-100 rounded-2xl p-5 hover:shadow-md transition-all flex items-center justify-between {% if not cat.is_active %}opacity-50{% endif %}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center shrink-0">
+                            <i class="fas {{ icon }} text-red-600"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <p class="font-semibold text-kivo-oscuro truncate">{{ cat.name }}</p>
+                            {% if not cat.is_active %}
+                            <span class="text-xs text-kivo-gris">Inactiva</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="flex gap-1 shrink-0">
+                        <a href="{% url 'core:category_update' cat.pk %}" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all" title="Editar"><i class="fas fa-edit text-sm"></i></a>
+                        <a href="{% url 'core:category_delete' cat.pk %}" class="p-2 text-kivo-gris hover:text-red-500 hover:bg-red-50 rounded-lg transition-all" title="Eliminar"><i class="fas fa-trash text-sm"></i></a>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-span-full p-12 text-center">
+                    <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas {{ icon }} text-3xl text-red-500"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-kivo-oscuro mb-2">No hay categorías de egreso</h3>
+                    <p class="text-kivo-gris mb-6 max-w-md mx-auto">Crea tu primera categoría de egresos para organizar tus movimientos.</p>
+                    <a href="{% url 'core:category_create' %}" class="inline-flex items-center gap-2 px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl hover:opacity-90 transition-all">
+                        <i class="fas fa-plus"></i> Nueva categoría
+                    </a>
+                </div>
+                {% endfor %}
+            </div>
+            {% endwith %}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -12,6 +12,11 @@ class Expense(models.Model):
         (TRANSFER, 'Transfer'),
         (CARD, 'Card'),
     ]
+    business = models.ForeignKey(
+        'users.Business', on_delete=models.CASCADE,
+        related_name='expenses', null=True, blank=True
+    )
+    # Quién registró el movimiento (auditoría). El filtro de la app es business.
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name='expenses'
@@ -31,3 +36,6 @@ class Expense(models.Model):
 
     class Meta:
         ordering = ['-date', '-created_at']
+        indexes = [
+            models.Index(fields=['business', '-date'], name='expenses_bus_date_idx'),
+        ]

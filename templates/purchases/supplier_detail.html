@@ -1,0 +1,58 @@
+{% extends 'base.html' %}
+{% block title %}Detalles Proveedor{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <div class="flex justify-between items-start mb-6">
+        <h1 class="text-2xl font-bold text-kivo-oscuro">{{ object.name }}</h1>
+        <div class="space-x-2">
+            <a href="{% url 'purchases:supplier_update' object.pk %}" class="text-yellow-600 hover:text-yellow-800"><i class="fas fa-edit"></i></a>
+            <a href="{% url 'purchases:supplier_delete' object.pk %}" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></a>
+        </div>
+    </div>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">NIT</p>
+            <p class="mt-1 font-medium text-kivo-oscuro font-mono">{{ object.nit }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Condiciones de Pago</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.payment_terms }} días</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Contacto</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.contact_name|default:"-" }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Teléfono</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.contact_phone|default:"-" }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Email</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.contact_email|default:"-" }}</p>
+        </div>
+        <div>
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Ciudad</p>
+            <p class="mt-1 font-medium text-kivo-oscuro">{{ object.city|default:"-" }}</p>
+        </div>
+    </div>
+    
+    {% if object.address %}
+    <div class="mt-6 pt-4 border-t border-kivo-azul-claro/50">
+        <p class="text-xs text-kivo-gris uppercase tracking-wider mb-2">Dirección</p>
+        <p class="text-sm text-kivo-pizarra">{{ object.address }}</p>
+    </div>
+    {% endif %}
+
+    {% if object.notes %}
+    <div class="mt-4">
+        <p class="text-xs text-kivo-gris uppercase tracking-wider mb-2">Notas</p>
+        <p class="text-sm text-kivo-pizarra">{{ object.notes }}</p>
+    </div>
+    {% endif %}
+
+    <div class="mt-8 flex justify-end">
+        <a href="{% url 'purchases:supplier_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Volver a la lista</a>
+    </div>
+</div>
+{% endblock %}

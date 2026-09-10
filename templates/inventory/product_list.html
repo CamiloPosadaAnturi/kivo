@@ -1,0 +1,59 @@
+{% extends 'base.html' %}
+{% block title %}Productos{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold text-kivo-oscuro">Productos</h1>
+        <a href="{% url 'inventory:product_create' %}" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+            <i class="fas fa-plus"></i> Nuevo Producto
+        </a>
+    </div>
+    
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100">
+            <thead>
+                <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                    <th class="px-6 py-3 text-left">SKU</th>
+                    <th class="px-6 py-3 text-left">Nombre</th>
+                    <th class="px-6 py-3 text-left">Categoría</th>
+                    <th class="px-6 py-3 text-right">Stock Actual</th>
+                    <th class="px-6 py-3 text-right">Precio Compra</th>
+                    <th class="px-6 py-3 text-center">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for product in object_list %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 text-sm font-medium text-kivo-oscuro font-mono">{{ product.sku }}</td>
+                    <td class="px-6 py-4 text-sm text-kivo-oscuro">{{ product.name }}</td>
+                    <td class="px-6 py-4 text-sm text-kivo-gris">{{ product.category|default:"-" }}</td>
+                    <td class="px-6 py-4 text-sm text-kivo-oscuro text-right">{{ product.current_stock }}</td>
+                    <td class="px-6 py-4 text-sm text-kivo-oscuro text-right">${{ product.purchase_price }}</td>
+                    <td class="px-6 py-4 text-center space-x-2">
+                        <a href="{% url 'inventory:product_detail' product.pk %}" class="text-kivo-petroleo hover:text-kivo-oscuro"><i class="fas fa-eye"></i></a>
+                        <a href="{% url 'inventory:product_update' product.pk %}" class="text-yellow-600 hover:text-yellow-800"><i class="fas fa-edit"></i></a>
+                        <a href="{% url 'inventory:product_delete' product.pk %}" class="text-red-500 hover:text-red-700"><i class="fas fa-trash"></i></a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-kivo-gris">
+                        No hay productos registrados.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

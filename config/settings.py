@@ -48,8 +48,15 @@ INSTALLED_APPS = [
     'bank_accounts',
     'incomes',
     'expenses',
+    'inventory',
+    'purchases',
+    'reports',
 ]
 AUTH_USER_MODEL = 'users.User'
+AUTHENTICATION_BACKENDS = [
+    'users.backends.EmailOrUsernameBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
 
 login_url = 'login'
 LOGIN_REDIRECT_URL = 'dashboard'
@@ -64,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.DemoReadOnlyMiddleware',
+    'inventory.middleware.BusinessProvisionMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'

@@ -12,14 +12,26 @@ from .forms import IncomeForm
 from .models import Income
 
 
+def current_business(request):
+    """Negocio del usuario autenticado, o None."""
+    user = getattr(request, 'user', None)
+    if user is not None and user.is_authenticated:
+        return getattr(user, 'business', None)
+    return None
+
+
 class IncomeListView(LoginRequiredMixin, ListView):
     paginate_by = 10
     template_name = 'incomes/income_list.html'
 
     def get_queryset(self):
+        business = current_business(self.request)
+        if business is None:
+            return Income.objects.none()
+
         qs = Income.objects.filter(
-            user=self.request.user
-        ).select_related('category', 'bank_account')
+            business=business
+        ).select_related('category', 'bank_account', 'user')
 
         date_from = self.request.GET.get('date_from')
         date_to = self.request.GET.get('date_to')
@@ -45,17 +57,20 @@ class IncomeListView(LoginRequiredMixin, ListView):
         qs = self.get_queryset()
         context['total'] = qs.aggregate(total=Sum('amount'))['total'] or 0
         context['count'] = qs.count()
-        context['all_categories'] = Category.objects.filter(
-            is_active=True, type=Category.INCOME
-        )
+        if hasattr(self.request.user, 'business') and self.request.user.business:
+            business_categories = Category.objects.filter(
+                is_active=True, type=Category.INCOME,
+                business=self.request.user.business
+            )
+        else:
+            business_categories = Category.objects.none()
+        context['all_categories'] = business_categories
         context['all_bank_accounts'] = (
             BankAccount.objects.filter(business=self.request.user.business)
             if hasattr(self.request.user, 'business') and self.request.user.business
             else BankAccount.objects.none()
         )
-        context['categories_for_modal'] = Category.objects.filter(
-            is_active=True, type=Category.INCOME
-        )
+        context['categories_for_modal'] = business_categories
         context['bank_accounts_for_modal'] = context['all_bank_accounts']
 
         page_transactions = context.get('object_list', [])
@@ -83,17 +98,22 @@ class IncomeCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['categories'] = Category.objects.filter(is_active=True, type=Category.INCOME)
         if hasattr(self.request.user, 'business') and self.request.user.business:
+            context['categories'] = Category.objects.filter(
+                is_active=True, type=Category.INCOME,
+                business=self.request.user.business
+            )
             context['bank_accounts'] = BankAccount.objects.filter(
                 business=self.request.user.business
             )
         else:
+            context['categories'] = Category.objects.none()
             context['bank_accounts'] = BankAccount.objects.none()
         return context
 
     def form_valid(self, form):
         form.instance.user = self.request.user
+        form.instance.business = current_business(self.request)
         messages.success(self.request, 'Income created successfully.')
         return super().form_valid(form)
 
@@ -111,6 +131,7 @@ class IncomeCreateAjaxView(LoginRequiredMixin, View):
         if form.is_valid():
             income = form.save(commit=False)
             income.user = request.user
+            income.business = current_business(request)
             income.save()
             return JsonResponse({'success': True, 'message': 'Income created successfully.'})
         else:
@@ -126,7 +147,10 @@ class IncomeDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'income'
 
     def get_queryset(self):
-        return Income.objects.filter(user=self.request.user)
+        business = current_business(self.request)
+        if business is None:
+            return Income.objects.none()
+        return Income.objects.filter(business=business)
 
 
 class IncomeUpdateView(LoginRequiredMixin, UpdateView):
@@ -138,7 +162,10 @@ class IncomeUpdateView(LoginRequiredMixin, UpdateView):
         return reverse_lazy('incomes:income_list')
 
     def get_queryset(self):
-        return Income.objects.filter(user=self.request.user)
+        business = current_business(self.request)
+        if business is None:
+            return Income.objects.none()
+        return Income.objects.filter(business=business)
 
     def get_initial(self):
         initial = super().get_initial()
@@ -148,12 +175,16 @@ class IncomeUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        context['categories'] = Category.objects.filter(is_active=True, type=Category.INCOME)
         if hasattr(self.request.user, 'business') and self.request.user.business:
+            context['categories'] = Category.objects.filter(
+                is_active=True, type=Category.INCOME,
+                business=self.request.user.business
+            )
             context['bank_accounts'] = BankAccount.objects.filter(
                 business=self.request.user.business
             )
         else:
+            context['categories'] = Category.objects.none()
             context['bank_accounts'] = BankAccount.objects.none()
         return context
 
@@ -170,7 +201,10 @@ class IncomeDeleteView(LoginRequiredMixin, DeleteView):
         return reverse_lazy('incomes:income_list')
 
     def get_queryset(self):
-        return Income.objects.filter(user=self.request.user)
+        business = current_business(self.request)
+        if business is None:
+            return Income.objects.none()
+        return Income.objects.filter(business=business)
 
     def delete(self, request, *args, **kwargs):
         messages.success(self.request, 'Income deleted successfully.')

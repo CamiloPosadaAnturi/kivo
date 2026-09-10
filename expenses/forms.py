@@ -1,6 +1,7 @@
 from django import forms
 from .models import Expense
 from bank_accounts.models import BankAccount
+from core.models import Category
 
 
 class ExpenseForm(forms.ModelForm):
@@ -27,9 +28,15 @@ class ExpenseForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        if 'business' in self.initial:
+        business = self.initial.get('business')
+        if business:
             self.fields['bank_account'].queryset = BankAccount.objects.filter(
-                business=self.initial['business']
+                business=business
+            )
+            # La categoría también se limita al negocio: sin esto se podía
+            # enviar por POST el id de una categoría de otro negocio.
+            self.fields['category'].queryset = Category.objects.filter(
+                business=business, type=Category.EXPENSE, is_active=True
             )
 
     def clean_amount(self):

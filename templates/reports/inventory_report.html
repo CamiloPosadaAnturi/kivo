@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+{% block title %}Reporte de Inventario{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <h1 class="text-2xl font-bold text-kivo-oscuro mb-6">Reporte de Inventario</h1>
+    
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+        <div class="bg-kivo-menta p-4 rounded-xl border border-kivo-azul-claro/50">
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Valor Total del Inventario</p>
+            <p class="text-2xl font-bold text-kivo-petroleo mt-1">${{ total_inventory_value|floatformat:2 }}</p>
+        </div>
+        <div class="bg-kivo-menta p-4 rounded-xl border border-kivo-azul-claro/50">
+            <p class="text-xs text-kivo-gris uppercase tracking-wider">Productos con Stock Bajo</p>
+            <p class="text-2xl font-bold text-red-600 mt-1">{{ low_stock_count }}</p>
+        </div>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100">
+            <thead>
+                <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                    <th class="px-4 py-3 text-left">SKU</th>
+                    <th class="px-4 py-3 text-left">Producto</th>
+                    <th class="px-4 py-3 text-right">Stock Actual</th>
+                    <th class="px-4 py-3 text-right">Stock Mínimo</th>
+                    <th class="px-4 py-3 text-right">Costo Unitario</th>
+                    <th class="px-4 py-3 text-right">Valor Total</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for product in products %}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-4 py-3 text-sm font-medium text-kivo-oscuro font-mono">{{ product.sku }}</td>
+                    <td class="px-4 py-3 text-sm text-kivo-oscuro">{{ product.name }}</td>
+                    <td class="px-4 py-3 text-sm text-right {% if product.current_stock <= product.min_stock %}text-red-600 font-bold{% else %}text-kivo-oscuro{% endif %}">
+                        {{ product.current_stock }}
+                    </td>
+                    <td class="px-4 py-3 text-sm text-right text-kivo-gris">{{ product.min_stock }}</td>
+                    <td class="px-4 py-3 text-sm text-right text-kivo-oscuro">${{ product.purchase_price }}</td>
+                    <td class="px-4 py-3 text-sm text-right font-bold text-kivo-oscuro">${{ product.total_value|floatformat:2 }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-kivo-gris">
+                        No hay datos para el reporte.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

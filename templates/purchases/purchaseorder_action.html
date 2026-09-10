@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}{{ heading }}{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6 text-center">
+    <div class="w-16 h-16 bg-kivo-azul-claro rounded-full flex items-center justify-center mx-auto mb-4 text-kivo-petroleo">
+        <i class="fas {{ icon }} text-2xl"></i>
+    </div>
+    <h2 class="text-xl font-bold text-kivo-oscuro mb-2">{{ heading }}</h2>
+    <p class="text-kivo-gris mb-2">
+        Orden <strong>{{ object.number }}</strong> · proveedor <strong>{{ object.supplier }}</strong>
+    </p>
+    <p class="text-sm text-kivo-gris mb-6">{{ question }}</p>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if can_perform %}
+    <form method="post">
+        {% csrf_token %}
+        <div class="flex justify-center gap-3">
+            <a href="{% url 'purchases:purchaseorder_detail' object.pk %}" class="border border-kivo-azul-claro text-kivo-pizarra px-6 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="btn-kivo text-white px-6 py-2 rounded-xl text-sm font-medium">{{ submit_text }}</button>
+        </div>
+    </form>
+    {% else %}
+    <div class="p-4 rounded-xl bg-yellow-50 text-yellow-800 text-sm mb-4">
+        Esta acción no está disponible para una orden en estado
+        <strong>{{ object.get_status_display }}</strong>.
+    </div>
+    <a href="{% url 'purchases:purchaseorder_detail' object.pk %}" class="border border-kivo-azul-claro text-kivo-pizarra px-6 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Volver a la orden</a>
+    {% endif %}
+</div>
+{% endblock %}
