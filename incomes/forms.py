@@ -1,5 +1,7 @@
 from django import forms
+from django.core.exceptions import ValidationError
 
+from bank_accounts.services import check_income_removable
 from core.forms import StyledFormMixin
 from .models import Income
 from bank_accounts.models import BankAccount
@@ -31,10 +33,12 @@ class IncomeForm(StyledFormMixin, forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields['bank_account'].required = True
+        self.fields['bank_account'].empty_label = 'Selecciona la cuenta o caja'
         business = self.initial.get('business')
         if business:
             self.fields['bank_account'].queryset = BankAccount.objects.filter(
-                business=business
+                business=business, is_active=True
             )
             # La categoría también se limita al negocio: sin esto se podía
             # enviar por POST el id de una categoría de otro negocio.
@@ -48,3 +52,19 @@ class IncomeForm(StyledFormMixin, forms.ModelForm):
             from decimal import Decimal, ROUND_DOWN
             amount = Decimal(str(amount)).quantize(Decimal('1'), rounding=ROUND_DOWN)
         return amount
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.instance.pk:
+            # Bajar el monto o mover el ingreso a otra cuenta le quita plata a
+            # la cuenta original, y eso puede dejarla en negativo.
+            anterior = Income.objects.get(pk=self.instance.pk)
+            try:
+                check_income_removable(
+                    anterior,
+                    new_amount=cleaned.get('amount'),
+                    new_account=cleaned.get('bank_account'),
+                )
+            except ValidationError as exc:
+                raise forms.ValidationError(exc.messages)
+        return cleaned

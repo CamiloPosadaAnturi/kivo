@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
 from django.db.models import DecimalField, ExpressionWrapper, F, Sum
@@ -40,11 +42,14 @@ def dashboard(request):
     if business is not None:
         incomes = Income.objects.filter(business=business)
         expenses = Expense.objects.filter(business=business)
-        total_accounts = BankAccount.objects.filter(business=business).count()
+        cuentas = BankAccount.objects.filter(business=business, is_active=True).with_balance()
+        total_accounts = cuentas.count()
+        available_balance = sum((c.current_balance for c in cuentas), Decimal('0'))
     else:
         incomes = Income.objects.none()
         expenses = Expense.objects.none()
         total_accounts = 0
+        available_balance = Decimal('0')
 
     total_income = incomes.aggregate(total=Sum('amount'))['total'] or 0
     total_expense = expenses.aggregate(total=Sum('amount'))['total'] or 0
@@ -77,6 +82,7 @@ def dashboard(request):
         'total_expense': total_expense,
         'total_balance': total_income - total_expense,
         'total_accounts': total_accounts,
+        'available_balance': available_balance,
         'total_products': total_products,
         'low_stock_count': low_stock_count,
         'inventory_value': inventory_value,

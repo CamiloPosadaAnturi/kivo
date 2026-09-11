@@ -19,8 +19,7 @@
     .badge-card { background: rgba(139, 92, 246, 0.1); color: #7c3aed; }
     .payment-method-btn { transition: all 0.3s ease; border: 2px solid #e5e7eb; background: white; }
     .payment-method-btn.selected { border-color: #059669; background: rgba(5, 150, 105, 0.05); color: #059669; }
-    .bank-account-section { max-height: 0; overflow: hidden; transition: max-height 0.4s ease, opacity 0.3s ease; opacity: 0; }
-    .bank-account-section.visible { max-height: 200px; opacity: 1; }
+    
 </style>
 {% endblock %}
 
@@ -127,7 +126,7 @@
                         <select name="bank_account" class="filter-input w-full px-3 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none">
                             <option value="">Todas</option>
                             {% for account in all_bank_accounts %}
-                            <option value="{{ account.pk }}" {% if request.GET.bank_account == account.pk|stringformat:"d" %}selected{% endif %}>{{ account.bank_name }}</option>
+                            <option value="{{ account.pk }}" {% if request.GET.bank_account == account.pk|stringformat:"d" %}selected{% endif %}>{{ account.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
@@ -185,7 +184,7 @@
                                     {% else %}<i class="fas fa-credit-card mr-1"></i> Tarjeta{% endif %}
                                 </span>
                             </td>
-                            <td class="px-6 py-3 text-sm text-kivo-pizarra">{% if tx.bank_account %}{{ tx.bank_account.bank_name }}{% else %}<span class="text-gray-400">-</span>{% endif %}</td>
+                            <td class="px-6 py-3 text-sm text-kivo-pizarra">{% if tx.bank_account %}{{ tx.bank_account.name }}{% else %}<span class="text-gray-400">Sin cuenta</span>{% endif %}</td>
                             <td class="px-6 py-3 whitespace-nowrap text-right">
                                 <span class="text-sm font-bold text-green-600">+${{ tx.amount|floatformat:0 }}</span>
                             </td>
@@ -298,12 +297,12 @@
                     </div>
                     <input type="hidden" name="payment_method" id="modalPaymentMethod" value="cash">
                 </div>
-                <div id="modalBankSection" class="bank-account-section">
-                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-university mr-2 text-kivo-gris"></i>Cuenta bancaria</label>
-                    <select name="bank_account" id="modalBankSelect" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all focus:border-green-500">
-                        <option value="">Selecciona una cuenta</option>
+                <div id="modalBankSection">
+                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2"><i class="fas fa-wallet mr-2 text-kivo-gris"></i>¿De qué cuenta sale o entra?</label>
+                    <select name="bank_account" id="modalBankSelect" required class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-kivo-oscuro focus:outline-none transition-all focus:border-green-500">
+                        <option value="">Selecciona la cuenta o caja</option>
                         {% for account in bank_accounts_for_modal %}
-                        <option value="{{ account.pk }}">{{ account.bank_name }} - {{ account.account_number }}</option>
+                        <option value="{{ account.pk }}" data-kind="{{ account.kind }}">{{ account }} · disponible ${{ account.current_balance|floatformat:0 }}</option>
                         {% endfor %}
                     </select>
                 </div>
@@ -356,12 +355,36 @@ function closeModal() {
     document.getElementById('formErrors').classList.add('hidden');
     document.getElementById('formErrorsList').innerHTML = '';
 }
+
+// La cuenta depende del método: el efectivo vive en una caja y lo demás en el banco.
+function filtrarCuentas(method, selectId) {
+    const select = document.getElementById(selectId);
+    if (!select) { return; }
+    const esperado = (method === 'cash') ? 'cash' : 'bank';
+    let visibles = 0;
+    let seleccionSigueValida = false;
+    Array.from(select.options).forEach(opt => {
+        if (!opt.value) { return; }
+        const coincide = opt.dataset.kind === esperado;
+        opt.hidden = !coincide;
+        opt.disabled = !coincide;
+        if (coincide) {
+            visibles++;
+            if (opt.selected) { seleccionSigueValida = true; }
+        }
+    });
+    if (!seleccionSigueValida) {
+        const primera = Array.from(select.options).find(o => o.value && !o.disabled);
+        select.value = primera ? primera.value : '';
+    }
+    if (visibles === 0) { select.value = ''; }
+}
+
 function selectPaymentMethod(method) {
     document.getElementById('modalPaymentMethod').value = method;
     document.querySelectorAll('.payment-method-btn').forEach(b => b.classList.remove('selected'));
     document.querySelector(`[data-method="${method}"]`).classList.add('selected');
-    const bankSection = document.getElementById('modalBankSection');
-    if (method === 'transfer') { bankSection.classList.add('visible'); } else { bankSection.classList.remove('visible'); document.getElementById('modalBankSelect').value = ''; }
+    filtrarCuentas(method, 'modalBankSelect');
 }
 async function submitModal(e) {
     e.preventDefault();

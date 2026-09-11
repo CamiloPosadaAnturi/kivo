@@ -1,5 +1,6 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils import timezone
 from django.db.models import Sum
 from django.http import JsonResponse
 from django.urls import reverse_lazy
@@ -66,7 +67,7 @@ class ExpenseListView(LoginRequiredMixin, ListView):
             business_categories = Category.objects.none()
         context['all_categories'] = business_categories
         context['all_bank_accounts'] = (
-            BankAccount.objects.filter(business=self.request.user.business)
+            BankAccount.objects.filter(business=self.request.user.business, is_active=True).with_balance()
             if hasattr(self.request.user, 'business') and self.request.user.business
             else BankAccount.objects.none()
         )
@@ -98,14 +99,15 @@ class ExpenseCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['hoy'] = timezone.localdate().isoformat()
         if hasattr(self.request.user, 'business') and self.request.user.business:
             context['categories'] = Category.objects.filter(
                 is_active=True, type=Category.EXPENSE,
                 business=self.request.user.business
             )
             context['bank_accounts'] = BankAccount.objects.filter(
-                business=self.request.user.business
-            )
+                business=self.request.user.business, is_active=True
+            ).with_balance()
         else:
             context['categories'] = Category.objects.none()
             context['bank_accounts'] = BankAccount.objects.none()
@@ -123,7 +125,7 @@ class ExpenseCreateAjaxView(LoginRequiredMixin, View):
         form = ExpenseForm(request.POST)
         if hasattr(request.user, 'business') and request.user.business:
             form.fields['bank_account'].queryset = BankAccount.objects.filter(
-                business=request.user.business
+                business=request.user.business, is_active=True
             )
         else:
             form.fields['bank_account'].queryset = BankAccount.objects.none()
@@ -175,14 +177,15 @@ class ExpenseUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['hoy'] = timezone.localdate().isoformat()
         if hasattr(self.request.user, 'business') and self.request.user.business:
             context['categories'] = Category.objects.filter(
                 is_active=True, type=Category.EXPENSE,
                 business=self.request.user.business
             )
             context['bank_accounts'] = BankAccount.objects.filter(
-                business=self.request.user.business
-            )
+                business=self.request.user.business, is_active=True
+            ).with_balance()
         else:
             context['categories'] = Category.objects.none()
             context['bank_accounts'] = BankAccount.objects.none()

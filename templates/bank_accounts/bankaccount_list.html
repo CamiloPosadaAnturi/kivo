@@ -1,41 +1,69 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}Cuentas bancarias{% endblock %}
+{% block title %}Cuentas y caja{% endblock %}
 
 {% block content %}
 <div class="space-y-6">
     <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-            <h1 class="text-3xl font-bold text-kivo-oscuro"><i class="fas fa-university text-kivo-petroleo mr-2"></i>Cuentas bancarias</h1>
-            <p class="text-kivo-gris mt-1">Gestiona tus cuentas bancarias.</p>
+            <h1 class="text-3xl font-bold text-kivo-oscuro"><i class="fas fa-wallet text-kivo-petroleo mr-2"></i>Cuentas y caja</h1>
+            <p class="text-kivo-gris mt-1">El dinero del negocio: bancos y caja.</p>
         </div>
         <a href="{% url 'bank_accounts:bankaccount_create' %}" class="px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl flex items-center gap-2 hover:opacity-90 transition-all">
             <i class="fas fa-plus"></i> Nueva cuenta
         </a>
     </div>
 
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if active_accounts %}
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-kivo-petroleo rounded-2xl p-5 text-white shadow-sm">
+            <p class="text-xs uppercase tracking-wider opacity-80">Dinero disponible</p>
+            <p class="text-3xl font-bold mt-1">${{ total_balance|floatformat:0 }}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">En bancos</p>
+            <p class="text-2xl font-bold text-kivo-oscuro mt-1">${{ bank_balance|floatformat:0 }}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">En caja</p>
+            <p class="text-2xl font-bold text-kivo-oscuro mt-1">${{ cash_balance|floatformat:0 }}</p>
+        </div>
+    </div>
+    {% endif %}
+
     {% if active_accounts %}
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {% for account in active_accounts %}
         <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm hover:shadow-md transition-all">
             <div class="flex items-center justify-between mb-4">
-                <div class="w-10 h-10 bg-kivo-azul-claro/30 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-university text-kivo-petroleo"></i>
+                <div class="w-10 h-10 {% if account.is_cash %}bg-green-100{% else %}bg-kivo-azul-claro/30{% endif %} rounded-xl flex items-center justify-center">
+                    <i class="fas {% if account.is_cash %}fa-cash-register text-green-600{% else %}fa-university text-kivo-petroleo{% endif %}"></i>
                 </div>
-                <span class="px-2 py-1 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">Activa</span>
+                <span class="px-2 py-1 {% if account.is_cash %}bg-green-100 text-green-700{% else %}bg-kivo-azul-claro text-kivo-petroleo{% endif %} rounded-lg text-xs font-semibold">{{ account.get_kind_display }}</span>
             </div>
             <h3 class="font-bold text-kivo-oscuro text-lg">{{ account.name }}</h3>
-            <p class="text-kivo-gris text-sm">{{ account.bank_name }}</p>
-            <p class="text-kivo-gris text-sm mb-4">{{ account.account_number }}</p>
+            <p class="text-kivo-gris text-sm">{{ account.bank_name|default:"Efectivo del negocio" }}</p>
+            <p class="text-kivo-gris text-sm mb-4">{{ account.account_number|default:"&nbsp;" }}</p>
             <div class="flex items-center justify-between pt-4 border-t border-gray-100">
                 <div>
-                    <p class="text-xs text-kivo-gris">Saldo</p>
-                    <p class="text-lg font-bold text-kivo-oscuro">${{ account.current_balance|floatformat:0 }}</p>
+                    <p class="text-xs text-kivo-gris">Disponible hoy</p>
+                    <p class="text-lg font-bold {% if account.current_balance > 0 %}text-kivo-oscuro{% else %}text-orange-600{% endif %}">${{ account.current_balance|floatformat:0 }}</p>
                 </div>
                 <div class="flex gap-2">
-                    <a href="{% url 'bank_accounts:bankaccount_detail' account.pk %}" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all"><i class="fas fa-eye"></i></a>
-                    <a href="{% url 'bank_accounts:bankaccount_update' account.pk %}" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all"><i class="fas fa-edit"></i></a>
+                    <a href="{% url 'bank_accounts:bankaccount_detail' account.pk %}" title="Ver movimientos" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all"><i class="fas fa-eye"></i></a>
+                    <a href="{% url 'bank_accounts:bankaccount_reconcile' account.pk %}" title="Conciliar saldo" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all"><i class="fas fa-scale-balanced"></i></a>
+                    <a href="{% url 'bank_accounts:bankaccount_update' account.pk %}" title="Editar" class="p-2 text-kivo-gris hover:text-kivo-petroleo hover:bg-kivo-azul-claro/30 rounded-lg transition-all"><i class="fas fa-edit"></i></a>
                 </div>
             </div>
         </div>

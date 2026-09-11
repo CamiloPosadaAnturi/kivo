@@ -1,13 +1,17 @@
 from django.contrib import messages
+from django.core.exceptions import ValidationError
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.utils import timezone
 from django.db.models import Sum
 from django.http import JsonResponse
+from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import ListView, CreateView, DetailView, UpdateView, DeleteView
 
 from core.models import Category
 from bank_accounts.models import BankAccount
+from bank_accounts.services import check_income_removable
 from .forms import IncomeForm
 from .models import Income
 
@@ -66,7 +70,7 @@ class IncomeListView(LoginRequiredMixin, ListView):
             business_categories = Category.objects.none()
         context['all_categories'] = business_categories
         context['all_bank_accounts'] = (
-            BankAccount.objects.filter(business=self.request.user.business)
+            BankAccount.objects.filter(business=self.request.user.business, is_active=True).with_balance()
             if hasattr(self.request.user, 'business') and self.request.user.business
             else BankAccount.objects.none()
         )
@@ -98,14 +102,15 @@ class IncomeCreateView(LoginRequiredMixin, CreateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['hoy'] = timezone.localdate().isoformat()
         if hasattr(self.request.user, 'business') and self.request.user.business:
             context['categories'] = Category.objects.filter(
                 is_active=True, type=Category.INCOME,
                 business=self.request.user.business
             )
             context['bank_accounts'] = BankAccount.objects.filter(
-                business=self.request.user.business
-            )
+                business=self.request.user.business, is_active=True
+            ).with_balance()
         else:
             context['categories'] = Category.objects.none()
             context['bank_accounts'] = BankAccount.objects.none()
@@ -123,7 +128,7 @@ class IncomeCreateAjaxView(LoginRequiredMixin, View):
         form = IncomeForm(request.POST)
         if hasattr(request.user, 'business') and request.user.business:
             form.fields['bank_account'].queryset = BankAccount.objects.filter(
-                business=request.user.business
+                business=request.user.business, is_active=True
             )
         else:
             form.fields['bank_account'].queryset = BankAccount.objects.none()
@@ -175,14 +180,15 @@ class IncomeUpdateView(LoginRequiredMixin, UpdateView):
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        context['hoy'] = timezone.localdate().isoformat()
         if hasattr(self.request.user, 'business') and self.request.user.business:
             context['categories'] = Category.objects.filter(
                 is_active=True, type=Category.INCOME,
                 business=self.request.user.business
             )
             context['bank_accounts'] = BankAccount.objects.filter(
-                business=self.request.user.business
-            )
+                business=self.request.user.business, is_active=True
+            ).with_balance()
         else:
             context['categories'] = Category.objects.none()
             context['bank_accounts'] = BankAccount.objects.none()
@@ -206,6 +212,13 @@ class IncomeDeleteView(LoginRequiredMixin, DeleteView):
             return Income.objects.none()
         return Income.objects.filter(business=business)
 
-    def delete(self, request, *args, **kwargs):
+    def form_valid(self, form):
+        # Quitar una entrada le resta plata a la cuenta; si eso la deja en rojo,
+        # no se puede borrar hasta que se ajusten los egresos.
+        try:
+            check_income_removable(self.object)
+        except ValidationError as exc:
+            messages.error(self.request, exc.messages[0])
+            return redirect('incomes:income_detail', pk=self.object.pk)
         messages.success(self.request, 'Ingreso eliminado correctamente.')
-        return super().delete(request, *args, **kwargs)
+        return super().form_valid(form)

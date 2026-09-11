@@ -38,11 +38,13 @@ from users.models import Business, Company, User
 
 DEMO_BUSINESS = 'Café Mi Tierra'
 
+# (nombre, banco, número, saldo inicial, tipo)
 BANCOS = [
-    ('Bancolombia Ahorros', 'Bancolombia', '01234567891', 8_500_000),
-    ('Davivienda Corriente', 'Davivienda', '98765432101', 4_200_000),
-    ('Nequi Caja menor', 'Nequi', '3106789012', 900_000),
-    ('Banco de Bogotá Nómina', 'Banco de Bogotá', '45612378900', 3_100_000),
+    ('Bancolombia Ahorros', 'Bancolombia', '01234567891', 40_000_000, 'bank'),
+    ('Davivienda Corriente', 'Davivienda', '98765432101', 25_000_000, 'bank'),
+    ('Nequi', 'Nequi', '3106789012', 6_000_000, 'bank'),
+    ('Caja del mostrador', '', '', 1_500_000, 'cash'),
+    ('Caja fuerte', '', '', 3_000_000, 'cash'),
 ]
 
 CATEGORIAS_INGRESO = [
@@ -326,10 +328,11 @@ class Command(BaseCommand):
 
     def crear_cuentas(self, business):
         cuentas = []
-        for nombre, banco, numero, saldo in BANCOS:
+        for nombre, banco, numero, saldo, tipo in BANCOS:
             cuenta, _ = BankAccount.objects.get_or_create(
                 business=business, name=nombre,
                 defaults={
+                    'kind': tipo,
                     'bank_name': banco,
                     'account_number': numero,
                     'opening_balance': money(saldo),
@@ -732,6 +735,29 @@ class Command(BaseCommand):
 
     # -- ingresos y egresos ------------------------------------------------
 
+    def cuenta_para(self, cuentas, metodo):
+        """El efectivo entra y sale por caja; transferencias y tarjeta, por banco."""
+        if metodo == 'cash':
+            opciones = [c for c in cuentas if c.kind == 'cash']
+        else:
+            opciones = [c for c in cuentas if c.kind == 'bank']
+        return random.choice(opciones or cuentas)
+
+    def metodo_para(self, cuenta, metodo):
+        """El método tiene que ser coherente con la cuenta que terminó pagando."""
+        if cuenta.kind == 'cash':
+            return 'cash'
+        return metodo if metodo in ('transfer', 'card') else 'transfer'
+
+    def cuenta_con_saldo(self, cuentas, preferida, monto):
+        """Devuelve una cuenta que aguante el egreso, o None si ninguna puede."""
+        candidatas = [preferida] + [c for c in cuentas if c.pk != preferida.pk]
+        for cuenta in candidatas:
+            cuenta.refresh_from_db()
+            if cuenta.current_balance >= monto:
+                return cuenta
+        return None
+
     def crear_movimientos_financieros(self, business, admin, empleado, cat_ingreso,
                                       cat_egreso, cuentas):
         ingresos = 0
@@ -739,14 +765,14 @@ class Command(BaseCommand):
             categoria = random.choices(
                 cat_ingreso, weights=[40, 18, 16, 8, 10, 4, 4], k=1)[0]
             bajo, alto = RANGO_INGRESO[categoria.name]
+            metodo = random.choices(['cash', 'transfer', 'card'], weights=[45, 25, 30], k=1)[0]
             Income.objects.create(
                 business=business,
                 user=random.choice([admin, empleado]),
                 category=categoria,
                 amount=money(random.randint(bajo, alto)),
-                payment_method=random.choices(
-                    ['cash', 'transfer', 'card'], weights=[45, 25, 30], k=1)[0],
-                bank_account=random.choice(cuentas) if random.random() > 0.35 else None,
+                payment_method=metodo,
+                bank_account=self.cuenta_para(cuentas, metodo),
                 date=self.today - timedelta(days=int(random.triangular(0, 180, 40))),
                 description=random.choice(DESC_INGRESO[categoria.name]),
             )
@@ -757,14 +783,23 @@ class Command(BaseCommand):
             categoria = random.choices(
                 cat_egreso, weights=[30, 14, 6, 12, 10, 8, 10, 5, 5], k=1)[0]
             bajo, alto = RANGO_EGRESO[categoria.name]
+            metodo = random.choices(['transfer', 'cash', 'card'], weights=[45, 35, 20], k=1)[0]
+            cuenta = self.cuenta_para(cuentas, metodo)
+            monto = money(random.randint(bajo, alto))
+
+            # Ninguna cuenta puede quedar en negativo: si no alcanza, se busca
+            # otra con saldo y si ninguna lo tiene, se salta el egreso.
+            cuenta = self.cuenta_con_saldo(cuentas, cuenta, monto)
+            if cuenta is None:
+                continue
+
             Expense.objects.create(
                 business=business,
                 user=random.choice([admin, empleado]),
                 category=categoria,
-                amount=money(random.randint(bajo, alto)),
-                payment_method=random.choices(
-                    ['transfer', 'cash', 'card'], weights=[45, 35, 20], k=1)[0],
-                bank_account=random.choice(cuentas) if random.random() > 0.25 else None,
+                amount=monto,
+                payment_method=self.metodo_para(cuenta, metodo),
+                bank_account=cuenta,
                 date=self.today - timedelta(days=int(random.triangular(0, 180, 60))),
                 description=random.choice(DESC_EGRESO[categoria.name]),
             )

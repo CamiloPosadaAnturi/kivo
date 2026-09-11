@@ -9,27 +9,34 @@
         <a href="{% url 'bank_accounts:bankaccount_list' %}" class="inline-flex items-center gap-2 text-kivo-gris hover:text-kivo-petroleo transition-colors text-sm mb-4">
             <i class="fas fa-arrow-left"></i> Volver a cuentas
         </a>
-        <h1 class="text-3xl font-bold text-kivo-oscuro">{% if form.instance.pk %}Editar cuenta{% else %}Nueva cuenta bancaria{% endif %}</h1>
+        <h1 class="text-3xl font-bold text-kivo-oscuro">{{ title|default:"Cuenta" }}</h1>
     </div>
 
     <div class="bg-white rounded-2xl shadow-lg border border-kivo-azul-claro/50 overflow-hidden">
         <form method="post">
             {% csrf_token %}
             <div class="p-6 space-y-6">
-                {% for field in form %}
-                <div>
-                    <label class="block text-sm font-semibold text-kivo-oscuro mb-2">{{ field.label }}</label>
-                    {{ field }}
-                    {% if field.errors %}
-                    <p class="text-red-500 text-sm mt-1">{{ field.errors.0 }}</p>
-                    {% endif %}
+                {% if not form.instance.pk %}
+                <div class="bg-kivo-menta rounded-xl p-4 text-sm text-kivo-pizarra">
+                    Escribe el dinero que la cuenta tiene <strong>en este momento</strong>.
+                    A partir de ahí Kivo suma las entradas y resta las salidas que registres,
+                    y no te dejará registrar una salida mayor al saldo disponible.
                 </div>
+                {% endif %}
+                {% if form.non_field_errors %}
+                <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm">
+                    {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                </div>
+                {% endif %}
+
+                {% for field in form %}
+                    {% include 'includes/field.html' with field=field %}
                 {% endfor %}
             </div>
             <div class="p-6 bg-gray-50 border-t border-gray-100 flex gap-4 justify-end">
                 <a href="{% url 'bank_accounts:bankaccount_list' %}" class="px-6 py-3 border-2 border-gray-200 text-kivo-gris font-semibold rounded-xl hover:border-kivo-gris hover:text-kivo-oscuro transition-all">Cancelar</a>
                 <button type="submit" class="btn-kivo px-8 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all">
-                    <i class="fas fa-check"></i> {% if form.instance.pk %}Guardar cambios{% else %}Guardar cuenta{% endif %}
+                    <i class="fas fa-check"></i> {{ submit_text|default:"Guardar" }}
                 </button>
             </div>
         </form>

@@ -21,14 +21,24 @@
         </div>
 
         <div class="p-6">
+            {% if has_transactions %}
+            <div class="bg-yellow-50 text-yellow-800 rounded-xl p-4 mb-6 text-sm">
+                Esta cuenta tiene movimientos registrados, así que no se borra:
+                queda <strong>inactiva</strong> y su historial se conserva.
+            </div>
+            {% endif %}
             <div class="bg-gray-50 rounded-xl p-4 mb-6">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-sm text-kivo-gris">Cuenta</span>
                     <span class="font-semibold text-kivo-oscuro">{{ bank_account.name }}</span>
                 </div>
                 <div class="flex items-center justify-between mb-3">
-                    <span class="text-sm text-kivo-gris">Banco</span>
-                    <span class="font-semibold text-kivo-oscuro">{{ bank_account.bank_name }}</span>
+                    <span class="text-sm text-kivo-gris">Tipo</span>
+                    <span class="font-semibold text-kivo-oscuro">{{ bank_account.get_kind_display }}</span>
+                </div>
+                <div class="flex items-center justify-between mb-3">
+                    <span class="text-sm text-kivo-gris">Saldo disponible</span>
+                    <span class="font-semibold text-kivo-oscuro">${{ bank_account.current_balance|floatformat:0 }}</span>
                 </div>
                 <div class="flex items-center justify-between">
                     <span class="text-sm text-kivo-gris">Número</span>

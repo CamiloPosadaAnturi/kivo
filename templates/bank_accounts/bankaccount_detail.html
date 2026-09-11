@@ -10,25 +10,51 @@
             <i class="fas fa-arrow-left"></i> Volver a cuentas
         </a>
         <h1 class="text-3xl font-bold text-kivo-oscuro">{{ bank_account.name }}</h1>
-        <p class="text-kivo-gris">{{ bank_account.bank_name }} - {{ bank_account.account_number }}</p>
+        <p class="text-kivo-gris">
+            {{ bank_account.get_kind_display }}
+            {% if bank_account.bank_name %}· {{ bank_account.bank_name }}{% endif %}
+            {% if bank_account.account_number %}· {{ bank_account.account_number }}{% endif %}
+        </p>
     </div>
 
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+        <div class="bg-kivo-petroleo rounded-2xl p-5 shadow-sm text-white">
+            <p class="text-sm opacity-80">Disponible hoy</p>
+            <p class="text-2xl font-bold mt-1">${{ bank_account.current_balance|floatformat:0 }}</p>
+        </div>
         <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
-            <p class="text-sm text-kivo-gris">Saldo</p>
-            <p class="text-2xl font-bold text-kivo-oscuro mt-1">${{ bank_account.current_balance|floatformat:0 }}</p>
+            <p class="text-sm text-kivo-gris">Saldo inicial</p>
+            <p class="text-2xl font-bold text-kivo-oscuro mt-1">${{ bank_account.opening_balance|floatformat:0 }}</p>
         </div>
         <div class="bg-white rounded-2xl p-5 border border-green-200/50 shadow-sm">
             <p class="text-sm text-kivo-gris">Ingresos</p>
             <p class="text-2xl font-bold text-green-600 mt-1">${{ total_income|floatformat:0 }}</p>
         </div>
         <div class="bg-white rounded-2xl p-5 border border-red-200/50 shadow-sm">
-            <p class="text-sm text-kivo-gris">Gastos</p>
+            <p class="text-sm text-kivo-gris">Salidas</p>
             <p class="text-2xl font-bold text-red-500 mt-1">${{ total_expense|floatformat:0 }}</p>
         </div>
     </div>
 
+    <p class="text-sm text-kivo-gris mb-6">
+        Disponible = saldo inicial ${{ bank_account.opening_balance|floatformat:0 }}
+        + entradas ${{ bank_account.total_income|floatformat:0 }}
+        − salidas ${{ bank_account.total_expense|floatformat:0 }}.
+        Kivo no deja registrar una salida que lo deje en negativo.
+    </p>
+
     <div class="flex gap-4 justify-end mb-6">
+        <a href="{% url 'bank_accounts:bankaccount_reconcile' bank_account.pk %}" class="px-4 py-2 border border-kivo-azul-claro text-kivo-pizarra rounded-xl text-sm font-semibold hover:bg-gray-50 transition-all"><i class="fas fa-scale-balanced mr-2"></i>Conciliar saldo</a>
         <a href="{% url 'bank_accounts:bankaccount_update' bank_account.pk %}" class="px-4 py-2 bg-kivo-petroleo text-white rounded-xl text-sm font-semibold hover:opacity-90 transition-all"><i class="fas fa-edit mr-2"></i>Editar</a>
         <a href="{% url 'bank_accounts:bankaccount_delete' bank_account.pk %}" class="px-4 py-2 bg-red-500 text-white rounded-xl text-sm font-semibold hover:bg-red-600 transition-all"><i class="fas fa-trash mr-2"></i>Eliminar</a>
     </div>
@@ -36,7 +62,7 @@
     {% if incomes %}
     <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden mb-6">
         <div class="px-6 py-4 border-b border-gray-100">
-            <h2 class="font-bold text-kivo-oscuro"><i class="fas fa-arrow-up text-green-500 mr-2"></i>Ingresos</h2>
+            <h2 class="font-bold text-kivo-oscuro"><i class="fas fa-arrow-up text-green-500 mr-2"></i>Entradas</h2>
         </div>
         <table class="w-full">
             <thead><tr class="bg-gray-50/50 border-b border-gray-100">
@@ -62,7 +88,7 @@
     {% if expenses %}
     <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100">
-            <h2 class="font-bold text-kivo-oscuro"><i class="fas fa-arrow-down text-red-500 mr-2"></i>Gastos</h2>
+            <h2 class="font-bold text-kivo-oscuro"><i class="fas fa-arrow-down text-red-500 mr-2"></i>Salidas</h2>
         </div>
         <table class="w-full">
             <thead><tr class="bg-gray-50/50 border-b border-gray-100">
