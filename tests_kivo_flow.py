@@ -1,8 +1,11 @@
+from datetime import date, timedelta
 from decimal import Decimal
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.test import TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from bank_accounts.models import BankAccount
 from core.models import Category
@@ -2001,3 +2004,408 @@ class PayrollTests(TestCase):
         provision_payroll(self.business)
         self.assertEqual(
             PayrollConcept.objects.filter(business=self.business).count(), antes)
+
+
+class BillingTests(TestCase):
+    """
+    El cobro del servicio: cuotas, pagos, bloqueo por mora y reactivación.
+    """
+
+    def setUp(self):
+        from billing.models import Plan
+        from billing.services import generar_cuotas
+
+        self.company = Company.objects.create(name='Panadería La Espiga')
+        self.business = Business.objects.create(company=self.company, name='La Espiga Centro')
+        self.cliente = User.objects.create_user(
+            username='marta', password='clave12345', role='admin',
+            company=self.company, business=self.business)
+        self.dueno_kivo = User.objects.create_superuser(
+            username='camilo', password='clave12345', email='camilo@kivo.com')
+
+        self.hoy = timezone.localdate()
+        # El corte cae el mismo día en que arranca: así la primera cuota es completa
+        self.plan = Plan.objects.create(
+            company=self.company, amount=Decimal('80000'), billing_day=self.hoy.day,
+            grace_days=5, starts_on=self.hoy)
+        generar_cuotas(self.plan)
+
+        # Otra empresa sin plan, para probar permisos sin que el bloqueo estorbe
+        self.empresa_libre = Company.objects.create(name='Sin cobro S.A.S.')
+        self.negocio_libre = Business.objects.create(
+            company=self.empresa_libre, name='Sin cobro')
+        self.cliente_libre = User.objects.create_user(
+            username='libre1', password='clave12345', role='admin',
+            company=self.empresa_libre, business=self.negocio_libre)
+
+    # -- generación de cuotas ----------------------------------------------
+
+    def test_the_plan_generates_one_invoice_per_period(self):
+        from billing.models import Invoice
+        cuotas = Invoice.objects.filter(plan=self.plan)
+        self.assertGreaterEqual(cuotas.count(), 1)
+        for cuota in cuotas:
+            with self.subTest(cuota=cuota.pk):
+                self.assertEqual(cuota.amount, Decimal('80000'))
+                self.assertEqual(cuota.status, Invoice.PENDING)
+                self.assertLess(cuota.period_start, cuota.period_end)
+
+    def test_generating_twice_does_not_duplicate(self):
+        from billing.models import Invoice
+        from billing.services import generar_cuotas
+        antes = Invoice.objects.filter(plan=self.plan).count()
+        generar_cuotas(self.plan)
+        generar_cuotas(self.plan)
+        self.assertEqual(Invoice.objects.filter(plan=self.plan).count(), antes)
+
+    def test_a_cancelled_plan_stops_charging(self):
+        from billing.models import Invoice, Plan
+        from billing.services import generar_cuotas
+        Invoice.objects.filter(plan=self.plan).delete()
+        self.plan.status = Plan.CANCELLED
+        self.plan.save(update_fields=['status'])
+        generar_cuotas(self.plan)
+        self.assertEqual(Invoice.objects.filter(plan=self.plan).count(), 0)
+
+    def test_the_cut_day_survives_short_months(self):
+        from billing.models import Plan
+        from billing.services import generar_cuotas
+        empresa = Company.objects.create(name='Otra empresa')
+        plan = Plan.objects.create(
+            company=empresa, amount=Decimal('50000'), billing_day=31,
+            grace_days=5, starts_on=date(2026, 1, 31))
+        generar_cuotas(plan, hasta=date(2026, 4, 1))
+
+        # Febrero no tiene 31: el corte cae en el último día del mes
+        febrero = plan.invoices.get(period_start=date(2026, 2, 28))
+        self.assertEqual(febrero.due_date, date(2026, 2, 28))
+        self.assertEqual(febrero.period_end, date(2026, 3, 30))
+
+    def test_the_invoice_is_due_the_day_its_period_starts(self):
+        for cuota in self.plan.invoices.all():
+            with self.subTest(cuota=cuota.pk):
+                self.assertEqual(cuota.due_date, cuota.period_start)
+
+    def test_the_first_period_is_charged_pro_rata(self):
+        from billing.models import Plan
+        from billing.services import generar_cuotas
+        empresa = Company.objects.create(name='Arranque a mitad de mes')
+        plan = Plan.objects.create(
+            company=empresa, amount=Decimal('90000'), billing_day=1,
+            grace_days=5, starts_on=date(2026, 1, 21))
+        generar_cuotas(plan, hasta=date(2026, 3, 1))
+
+        primera = plan.invoices.get(period_start=date(2026, 1, 21))
+        self.assertEqual(primera.period_end, date(2026, 1, 31))
+        self.assertEqual(primera.amount, Decimal('31935'))  # 11 de los 31 días de enero
+
+        segunda = plan.invoices.get(period_start=date(2026, 2, 1))
+        self.assertEqual(segunda.amount, Decimal('90000'))
+
+    # -- acceso -------------------------------------------------------------
+
+    def _vencer_cuota(self, dias_de_mora):
+        """Deja la cuota más antigua vencida hace tantos días."""
+        cuota = self.plan.invoices.order_by('due_date').first()
+        cuota.due_date = self.hoy - timedelta(days=dias_de_mora)
+        cuota.save(update_fields=['due_date'])
+        return cuota
+
+    def test_a_client_up_to_date_enters_normally(self):
+        from billing.models import Invoice
+        from billing.services import marcar_pagada
+        for cuota in self.plan.invoices.filter(status=Invoice.PENDING):
+            marcar_pagada(cuota)
+        self.client.login(username='marta', password='clave12345')
+        self.assertEqual(self.client.get(reverse('dashboard')).status_code, 200)
+
+    def test_inside_the_grace_period_the_client_still_works(self):
+        self._vencer_cuota(3)  # vencida, pero con 5 días de gracia
+        self.client.login(username='marta', password='clave12345')
+        respuesta = self.client.get(reverse('dashboard'))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.wsgi_request.subscription.status, 'late')
+
+    def test_after_the_grace_period_everything_is_blocked(self):
+        self._vencer_cuota(10)
+        self.client.login(username='marta', password='clave12345')
+        for nombre in ('dashboard', 'incomes:income_list', 'expenses:expense_list',
+                       'inventory:product_list', 'purchases:home', 'reports:home',
+                       'payroll:dashboard', 'bank_accounts:bankaccount_list'):
+            with self.subTest(ruta=nombre):
+                respuesta = self.client.get(reverse(nombre))
+                self.assertEqual(respuesta.status_code, 302)
+                self.assertEqual(respuesta['Location'], reverse('billing:suspended'))
+
+    def test_a_blocked_client_cannot_write_either(self):
+        from core.models import Category
+        self._vencer_cuota(10)
+        self.client.login(username='marta', password='clave12345')
+        respuesta = self.client.post(reverse('core:category_create'), {
+            'name': 'Categoría a escondidas', 'type': Category.INCOME})
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(respuesta['Location'], reverse('billing:suspended'))
+        self.assertFalse(Category.objects.filter(name='Categoría a escondidas').exists())
+
+    def test_the_suspension_screen_explains_and_lets_them_log_out(self):
+        cuota = self._vencer_cuota(10)
+        self.client.login(username='marta', password='clave12345')
+        respuesta = self.client.get(reverse('billing:suspended'))
+        self.assertEqual(respuesta.status_code, 200)
+        html = respuesta.content.decode()
+        self.assertIn('Tu cuenta está suspendida', html)
+        self.assertIn('falta de pago', html)
+        self.assertIn(reverse('logout'), html)
+        self.assertIn('80.000', html)  # el valor de la cuota, con separador de miles
+
+    def test_logging_out_still_works_while_blocked(self):
+        self._vencer_cuota(10)
+        self.client.login(username='marta', password='clave12345')
+        respuesta = self.client.post(reverse('logout'))
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertNotIn(reverse('billing:suspended'), respuesta['Location'])
+
+    def test_someone_up_to_date_does_not_see_the_suspension_screen(self):
+        self.client.login(username='marta', password='clave12345')
+        respuesta = self.client.get(reverse('billing:suspended'))
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(respuesta['Location'], reverse('dashboard'))
+
+    def test_a_company_without_a_plan_is_never_blocked(self):
+        self.client.login(username='libre1', password='clave12345')
+        respuesta = self.client.get(reverse('dashboard'))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.wsgi_request.subscription.status, 'ok')
+
+    def test_the_demo_is_never_blocked(self):
+        from billing.models import Plan
+        from billing.services import generar_cuotas
+        empresa = Company.objects.create(name='Kivo Demo')
+        negocio = Business.objects.create(company=empresa, name='Café Mi Tierra')
+        User.objects.create_user(username='demo2', password='clave12345',
+                                 role='admin', company=empresa, business=negocio)
+        plan = Plan.objects.create(
+            company=empresa, amount=Decimal('80000'), billing_day=1,
+            starts_on=self.hoy - timedelta(days=120))
+        generar_cuotas(plan)
+
+        self.client.login(username='demo2', password='clave12345')
+        self.assertEqual(self.client.get(reverse('dashboard')).status_code, 200)
+
+    def test_the_kivo_owner_is_never_blocked(self):
+        self._vencer_cuota(30)
+        self.client.login(username='camilo', password='clave12345')
+        self.assertEqual(self.client.get(reverse('billing:home')).status_code, 200)
+
+    def test_a_plan_with_blocking_off_only_warns(self):
+        self.plan.blocking_enabled = False
+        self.plan.save(update_fields=['blocking_enabled'])
+        self._vencer_cuota(30)
+        self.client.login(username='marta', password='clave12345')
+        respuesta = self.client.get(reverse('dashboard'))
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertEqual(respuesta.wsgi_request.subscription.status, 'late')
+
+    # -- avisos -------------------------------------------------------------
+
+    def test_the_banner_warns_before_the_due_date(self):
+        from billing.models import Invoice
+        from billing.services import marcar_pagada
+        cuotas = list(self.plan.invoices.order_by('due_date'))
+        for cuota in cuotas[:-1]:
+            marcar_pagada(cuota)
+        ultima = cuotas[-1]
+        ultima.due_date = self.hoy + timedelta(days=3)
+        ultima.save(update_fields=['due_date'])
+
+        self.client.login(username='marta', password='clave12345')
+        respuesta = self.client.get(reverse('dashboard'))
+        self.assertEqual(respuesta.wsgi_request.subscription.status, 'warning')
+        self.assertIn('Tu plan vence en 3 días', respuesta.content.decode())
+
+    def test_the_banner_turns_red_once_it_is_late(self):
+        self._vencer_cuota(2)
+        self.client.login(username='marta', password='clave12345')
+        html = self.client.get(reverse('dashboard')).content.decode()
+        self.assertIn('cuota vencida', html)
+        self.assertIn('la cuenta se bloquea el', html)
+
+    # -- panel de cobros ----------------------------------------------------
+
+    def test_only_the_kivo_owner_reaches_the_billing_panel(self):
+        self.client.login(username='libre1', password='clave12345')
+        for url in (reverse('billing:home'),
+                    reverse('billing:plan_detail', args=[self.plan.pk]),
+                    reverse('billing:plan_update', args=[self.plan.pk])):
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 403)
+
+    def test_an_anonymous_visitor_is_sent_to_the_login(self):
+        respuesta = self.client.get(reverse('billing:home'))
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertIn(reverse('login'), respuesta['Location'])
+
+    def test_marking_an_invoice_paid_unblocks_the_client(self):
+        from billing.models import Invoice
+        cuota = self._vencer_cuota(10)
+
+        # Antes: bloqueado
+        self.client.login(username='marta', password='clave12345')
+        self.assertEqual(
+            self.client.get(reverse('dashboard'))['Location'], reverse('billing:suspended'))
+
+        # El dueño de Kivo registra el pago
+        self.client.login(username='camilo', password='clave12345')
+        respuesta = self.client.post(reverse('billing:invoice_pay', args=[cuota.pk]), {
+            'paid_on': self.hoy.isoformat(), 'amount': '80000',
+            'method': 'transfer', 'reference': 'Nequi 123'})
+        self.assertEqual(respuesta.status_code, 302)
+
+        cuota.refresh_from_db()
+        self.assertEqual(cuota.status, Invoice.PAID)
+        self.assertEqual(cuota.paid_amount, Decimal('80000'))
+        self.assertEqual(cuota.reference, 'Nequi 123')
+
+        # Después: entra de nuevo
+        self.client.login(username='marta', password='clave12345')
+        self.assertEqual(self.client.get(reverse('dashboard')).status_code, 200)
+
+    def test_a_client_cannot_mark_their_own_invoice_as_paid(self):
+        from billing.models import Invoice
+        cuota = self._vencer_cuota(10)
+        datos = {'paid_on': self.hoy.isoformat(), 'amount': '80000', 'method': 'cash'}
+
+        # El moroso ni siquiera llega: el portero lo manda al cartel de pago
+        self.client.login(username='marta', password='clave12345')
+        respuesta = self.client.post(reverse('billing:invoice_pay', args=[cuota.pk]), datos)
+        self.assertEqual(respuesta['Location'], reverse('billing:suspended'))
+
+        # Y un cliente al día que escriba la URL se topa con un 403
+        self.client.login(username='libre1', password='clave12345')
+        self.assertEqual(
+            self.client.post(reverse('billing:invoice_pay', args=[cuota.pk]), datos).status_code,
+            403)
+
+        cuota.refresh_from_db()
+        self.assertEqual(cuota.status, Invoice.PENDING)
+
+    def test_paying_the_same_invoice_twice_changes_nothing(self):
+        from billing.services import marcar_pagada
+        cuota = self.plan.invoices.order_by('due_date').first()
+        marcar_pagada(cuota, monto=Decimal('80000'))
+        with self.assertRaises(DjangoValidationError):
+            marcar_pagada(cuota, monto=Decimal('80000'))
+
+    def test_undoing_a_payment_blocks_again(self):
+        from billing.models import Invoice
+        cuota = self._vencer_cuota(10)
+        self.client.login(username='camilo', password='clave12345')
+        self.client.post(reverse('billing:invoice_pay', args=[cuota.pk]), {
+            'paid_on': self.hoy.isoformat(), 'amount': '80000', 'method': 'cash'})
+        self.client.post(reverse('billing:invoice_unpay', args=[cuota.pk]))
+
+        cuota.refresh_from_db()
+        self.assertEqual(cuota.status, Invoice.PENDING)
+        self.assertIsNone(cuota.paid_on)
+
+        self.client.login(username='marta', password='clave12345')
+        self.assertEqual(
+            self.client.get(reverse('dashboard'))['Location'], reverse('billing:suspended'))
+
+    def test_voiding_an_invoice_stops_the_block(self):
+        cuota = self._vencer_cuota(10)
+        self.client.login(username='camilo', password='clave12345')
+        self.client.post(reverse('billing:invoice_void', args=[cuota.pk]),
+                         {'reason': 'Mes de cortesía'})
+        cuota.refresh_from_db()
+        self.assertEqual(cuota.status, 'void')
+        self.assertFalse(cuota.blocks)
+
+    def test_the_pay_button_carries_the_amount_without_thousand_separators(self):
+        """
+        Un input numérico leería "112.258" como 112 pesos con 258 milésimas, así
+        que el valor del botón va sin formato.
+        """
+        self.client.login(username='camilo', password='clave12345')
+        html = self.client.get(
+            reverse('billing:plan_detail', args=[self.plan.pk])).content.decode()
+        self.assertIn('data-monto="80000.00"', html)
+        self.assertNotIn('data-monto="80.000"', html)
+
+    def test_the_billing_panel_lists_plans_and_companies_without_one(self):
+        Company.objects.create(name='Ferretería El Tornillo')
+        self.client.login(username='camilo', password='clave12345')
+        html = self.client.get(reverse('billing:home')).content.decode()
+        self.assertIn('Panadería La Espiga', html)
+        self.assertIn('Ferretería El Tornillo', html)
+        self.assertIn('Empresas sin plan', html)
+
+    def test_the_owner_can_create_a_plan_for_a_company_without_one(self):
+        from billing.models import Plan
+        empresa = Company.objects.create(name='Ferretería El Tornillo')
+        self.client.login(username='camilo', password='clave12345')
+        respuesta = self.client.post(reverse('billing:plan_create', args=[empresa.pk]), {
+            'name': 'Plan mensual', 'amount': '120000', 'cycle': 'monthly',
+            'billing_day': '5', 'grace_days': '5',
+            'starts_on': self.hoy.isoformat(), 'status': 'active',
+            'blocking_enabled': 'on'})
+        self.assertEqual(respuesta.status_code, 302)
+        plan = Plan.objects.get(company=empresa)
+        self.assertEqual(plan.amount, Decimal('120000'))
+        self.assertTrue(plan.invoices.exists())
+
+    def test_a_company_cannot_end_up_with_two_plans(self):
+        from billing.models import Plan
+        self.client.login(username='camilo', password='clave12345')
+        self.client.post(reverse('billing:plan_create', args=[self.company.pk]), {
+            'name': 'Otro plan', 'amount': '200000', 'cycle': 'monthly',
+            'billing_day': '1', 'grace_days': '5',
+            'starts_on': self.hoy.isoformat(), 'status': 'active'})
+        self.assertEqual(Plan.objects.filter(company=self.company).count(), 1)
+
+    def test_a_zero_fee_is_rejected(self):
+        empresa = Company.objects.create(name='Gratis S.A.S.')
+        self.client.login(username='camilo', password='clave12345')
+        respuesta = self.client.post(reverse('billing:plan_create', args=[empresa.pk]), {
+            'name': 'Plan', 'amount': '0', 'cycle': 'monthly', 'billing_day': '1',
+            'grace_days': '5', 'starts_on': self.hoy.isoformat(), 'status': 'active'})
+        self.assertEqual(respuesta.status_code, 200)
+        self.assertIn('amount', respuesta.context['form'].errors)
+
+    def test_the_sidebar_shows_billing_only_to_the_kivo_owner(self):
+        self.client.login(username='camilo', password='clave12345')
+        self.assertIn(reverse('billing:home'),
+                      self.client.get(reverse('dashboard')).content.decode())
+
+        self.client.login(username='marta', password='clave12345')
+        self.assertNotIn(reverse('billing:home'),
+                         self.client.get(reverse('dashboard')).content.decode())
+
+    # -- alta con plan ------------------------------------------------------
+
+    def test_creating_a_company_with_a_fee_leaves_the_plan_ready(self):
+        from billing.models import Plan
+        self.client.login(username='camilo', password='clave12345')
+        datos = dict(CompanyOnboardingTests.DATOS)
+        datos.update({'username': 'martaruiz', 'email': 'marta.ruiz@laespiga.co',
+                      'plan_amount': '95000', 'plan_cycle': 'monthly',
+                      'plan_billing_day': '10', 'plan_grace_days': '5',
+                      'plan_starts_on': self.hoy.isoformat()})
+        respuesta = self.client.post(reverse('company_create'), datos)
+        self.assertEqual(respuesta.status_code, 302)
+
+        plan = Plan.objects.get(company__name='Panadería La Espiga S.A.S.')
+        self.assertEqual(plan.amount, Decimal('95000'))
+        self.assertEqual(plan.billing_day, 10)
+        self.assertEqual(plan.grace_days, 5)
+        self.assertTrue(plan.invoices.exists())
+
+    def test_creating_a_company_without_a_fee_leaves_it_free(self):
+        from billing.models import Plan
+        self.client.login(username='camilo', password='clave12345')
+        datos = dict(CompanyOnboardingTests.DATOS)
+        datos.update({'username': 'martaruiz', 'email': 'marta.ruiz@laespiga.co'})
+        respuesta = self.client.post(reverse('company_create'), datos)
+        self.assertEqual(respuesta.status_code, 302)
+        empresa = Company.objects.get(name='Panadería La Espiga S.A.S.')
+        self.assertFalse(Plan.objects.filter(company=empresa).exists())

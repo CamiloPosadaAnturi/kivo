@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     'inventory',
     'purchases',
     'payroll',
+    'billing',
     'reports',
 ]
 AUTH_USER_MODEL = 'users.User'
@@ -82,6 +83,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.DemoReadOnlyMiddleware',
     'inventory.middleware.BusinessProvisionMiddleware',
+    'billing.middleware.SubscriptionGateMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'

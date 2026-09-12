@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <div>
+        <a href="{% url 'billing:home' %}" class="inline-flex items-center gap-2 text-kivo-gris hover:text-kivo-petroleo transition-colors text-sm mb-4">
+            <i class="fas fa-arrow-left"></i> Volver a cobros
+        </a>
+        <h1 class="text-3xl font-bold text-kivo-oscuro">{{ titulo }}</h1>
+        <p class="text-kivo-gris mt-1">
+            Kivo genera la cuota de cada periodo y tú la marcas como pagada. Si se vence
+            y pasan los días de gracia, la cuenta del cliente se bloquea sola.
+        </p>
+    </div>
+
+    <form method="post" class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-6 space-y-4">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
+        {% include 'includes/field.html' with field=form.name %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {% include 'includes/field.html' with field=form.amount %}
+            {% include 'includes/field.html' with field=form.cycle %}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {% include 'includes/field.html' with field=form.billing_day %}
+            {% include 'includes/field.html' with field=form.grace_days %}
+            {% include 'includes/field.html' with field=form.starts_on %}
+        </div>
+
+        {% include 'includes/field.html' with field=form.status %}
+        {% include 'includes/field.html' with field=form.blocking_enabled %}
+        {% include 'includes/field.html' with field=form.notes %}
+
+        <div class="flex flex-col sm:flex-row justify-end gap-3 pt-2">
+            <a href="{% url 'billing:home' %}" class="px-6 py-3 border-2 border-gray-200 text-kivo-pizarra font-semibold rounded-xl text-center hover:border-kivo-petroleo hover:text-kivo-petroleo transition-all">
+                Cancelar
+            </a>
+            <button type="submit" class="btn-kivo text-white px-6 py-3 rounded-xl font-semibold">
+                {{ submit_text }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

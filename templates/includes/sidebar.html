@@ -136,6 +136,14 @@
                     </div>
                     Empresas
                 </a>
+
+                <a href="{% url 'billing:home' %}"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-pizarra {% if request.resolver_match.namespace == 'billing' %}active{% endif %}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {% if request.resolver_match.namespace == 'billing' %}bg-kivo-petroleo text-white{% else %}bg-green-100 text-green-600{% endif %}">
+                        <i class="fas fa-file-invoice-dollar text-sm"></i>
+                    </div>
+                    Cobros
+                </a>
             </div>
             {% endif %}
 

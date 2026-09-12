@@ -69,6 +69,22 @@
             </p>
         </section>
 
+        <section>
+            <h2 class="text-xs font-semibold text-kivo-gris uppercase tracking-wider mb-3">4. Qué te va a pagar</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% include 'includes/field.html' with field=form.plan_amount %}
+                {% include 'includes/field.html' with field=form.plan_cycle %}
+                {% include 'includes/field.html' with field=form.plan_billing_day %}
+                {% include 'includes/field.html' with field=form.plan_grace_days %}
+                {% include 'includes/field.html' with field=form.plan_starts_on %}
+            </div>
+            <p class="text-xs text-kivo-gris mt-2">
+                Kivo genera la cuota de cada periodo y tú la marcas como pagada desde Cobros.
+                Si se vence y se pasan los días de gracia, la cuenta se bloquea sola con un
+                aviso de pago; nada se borra.
+            </p>
+        </section>
+
         <div class="flex justify-end gap-3 pt-4 border-t border-kivo-azul-claro/50">
             <a href="{% url 'company_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>
             <button type="submit" class="btn-kivo text-white px-6 py-2 rounded-xl text-sm font-medium flex items-center gap-2">

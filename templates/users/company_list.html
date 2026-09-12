@@ -54,6 +54,7 @@
                         <th class="px-4 py-3 text-left">Negocios</th>
                         <th class="px-4 py-3 text-left">Usuarios</th>
                         <th class="px-4 py-3 text-left">Creada</th>
+                        <th class="px-4 py-3 text-left">Plan</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -75,10 +76,21 @@
                             {% for u in company.users.all %}{{ u.username }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
                         </td>
                         <td class="px-4 py-3 text-sm text-kivo-gris">{{ company.created_at|date:"d/m/Y" }}</td>
+                        <td class="px-4 py-3 text-sm">
+                            {% if company.plan %}
+                            <a href="{% url 'billing:plan_detail' company.plan.pk %}" class="text-kivo-petroleo hover:underline">
+                                ${{ company.plan.amount|floatformat:0 }} {{ company.plan.get_cycle_display|lower }}
+                            </a>
+                            {% else %}
+                            <a href="{% url 'billing:plan_create' company.pk %}" class="text-kivo-gris hover:text-kivo-petroleo hover:underline">
+                                Sin plan · ponerle uno
+                            </a>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="px-6 py-12 text-center text-kivo-gris">
+                        <td colspan="6" class="px-6 py-12 text-center text-kivo-gris">
                             Todavía no has dado de alta ninguna empresa.
                         </td>
                     </tr>

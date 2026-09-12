@@ -50,6 +50,28 @@ class CompanyOnboardingForm(StyledFormMixin, forms.Form):
     password_confirm = forms.CharField(
         label='Repetir contraseña', widget=forms.PasswordInput(render_value=True))
 
+    # --- Cobro del servicio ----------------------------------------------
+    plan_amount = forms.DecimalField(
+        label='Valor de la cuota', max_digits=12, decimal_places=2, min_value=0,
+        required=False,
+        help_text='Déjalo vacío si por ahora no le vas a cobrar. Sin plan, la cuenta '
+                  'nunca se bloquea.',
+        widget=forms.NumberInput(attrs={'step': '1000', 'min': '0',
+                                        'placeholder': 'Ej: 80000'}))
+    plan_cycle = forms.ChoiceField(
+        label='Ciclo de cobro', required=False, initial='monthly',
+        choices=[('monthly', 'Mensual'), ('quarterly', 'Trimestral'), ('yearly', 'Anual')])
+    plan_billing_day = forms.IntegerField(
+        label='Día de corte', required=False, initial=1, min_value=1, max_value=31,
+        widget=forms.NumberInput(attrs={'min': '1', 'max': '31'}))
+    plan_grace_days = forms.IntegerField(
+        label='Días de gracia', required=False, initial=5, min_value=0, max_value=90,
+        help_text='Días después del corte antes de bloquear la cuenta.',
+        widget=forms.NumberInput(attrs={'min': '0', 'max': '90'}))
+    plan_starts_on = forms.DateField(
+        label='El cobro empieza el', required=False,
+        widget=forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'))
+
     def clean_company_name(self):
         nombre = self.cleaned_data['company_name'].strip()
         if Company.objects.filter(name__iexact=nombre).exists():
@@ -73,6 +95,12 @@ class CompanyOnboardingForm(StyledFormMixin, forms.Form):
         if User.objects.filter(email__iexact=correo).exists():
             raise ValidationError('Ya hay un usuario con ese correo.')
         return correo
+
+    def clean_plan_amount(self):
+        monto = self.cleaned_data.get('plan_amount')
+        if monto is not None and monto <= 0:
+            raise ValidationError('Si vas a cobrar, la cuota debe ser mayor que cero.')
+        return monto
 
     def clean(self):
         cleaned = super().clean()

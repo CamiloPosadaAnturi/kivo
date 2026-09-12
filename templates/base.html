@@ -183,6 +183,37 @@
     <!-- Main content -->
     <main class="pt-16 min-h-screen main-content">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+            {% if request.subscription.warns %}
+            <div class="mb-6 rounded-2xl p-5 border {% if request.subscription.status == 'late' %}bg-red-50 border-red-200{% else %}bg-yellow-50 border-yellow-200{% endif %}">
+                <div class="flex flex-col sm:flex-row sm:items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 {% if request.subscription.status == 'late' %}bg-red-100 text-red-600{% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                        <i class="fas fa-triangle-exclamation"></i>
+                    </div>
+                    <div class="flex-1">
+                        {% if request.subscription.status == 'late' %}
+                        <p class="font-bold text-kivo-oscuro">
+                            Tienes una cuota vencida por ${{ request.subscription.amount|floatformat:0 }}
+                        </p>
+                        <p class="text-sm text-kivo-pizarra">
+                            Se venció el {{ request.subscription.invoice.due_date|date:"d/m/Y" }}.
+                            Si no se registra el pago, la cuenta se bloquea el
+                            {{ request.subscription.blocks_from|date:"d/m/Y" }}.
+                        </p>
+                        {% else %}
+                        <p class="font-bold text-kivo-oscuro">
+                            Tu plan vence en {{ request.subscription.days_to_due }} día{{ request.subscription.days_to_due|pluralize }}
+                        </p>
+                        <p class="text-sm text-kivo-pizarra">
+                            La cuota de ${{ request.subscription.amount|floatformat:0 }} se vence el
+                            {{ request.subscription.invoice.due_date|date:"d/m/Y" }}.
+                        </p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             {% block content %}{% endblock %}
         </div>
     </main>

@@ -10,6 +10,7 @@ from django.views.generic import FormView, ListView
 from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 from django.shortcuts import render, redirect
 from django.contrib import messages
+from django.utils import timezone
 
 from incomes.models import Income
 from expenses.models import Expense
@@ -125,7 +126,8 @@ class CompanyListView(SuperuserRequiredMixin, ListView):
     paginate_by = 20
 
     def get_queryset(self):
-        qs = Company.objects.prefetch_related('businesses', 'users').order_by('name')
+        qs = (Company.objects.select_related('plan')
+              .prefetch_related('businesses', 'users').order_by('name', 'id'))
         texto = (self.request.GET.get('q') or '').strip()
         if texto:
             qs = qs.filter(Q(name__icontains=texto) | Q(tax_id__icontains=texto))
@@ -163,8 +165,34 @@ class CompanyCreateView(SuperuserRequiredMixin, FormView):
             last_name=datos.get('last_name', ''),
             email=datos['email'],
         )
-        messages.success(
-            self.request,
-            f'Empresa "{company.name}" creada con el negocio "{business.name}". '
-            f'El cliente entra con el usuario {owner.username}.')
+        plan = self.crear_plan(company, datos)
+
+        aviso = (f'Empresa "{company.name}" creada con el negocio "{business.name}". '
+                 f'El cliente entra con el usuario {owner.username}.')
+        if plan is not None:
+            aviso += (f' Se le cobrará ${plan.amount:,.0f} '
+                      f'{plan.get_cycle_display().lower()}.').replace(',', '.')
+        else:
+            aviso += ' Por ahora sin plan de cobro: la cuenta no se bloquea.'
+        messages.success(self.request, aviso)
         return super().form_valid(form)
+
+    def crear_plan(self, company, datos):
+        """El plan es opcional: sin valor de cuota no se le cobra nada."""
+        from billing.models import Plan
+        from billing.services import generar_cuotas
+
+        monto = datos.get('plan_amount')
+        if not monto:
+            return None
+
+        plan = Plan.objects.create(
+            company=company,
+            amount=monto,
+            cycle=datos.get('plan_cycle') or Plan.MONTHLY,
+            billing_day=datos.get('plan_billing_day') or 1,
+            grace_days=datos.get('plan_grace_days') if datos.get('plan_grace_days') is not None else 5,
+            starts_on=datos.get('plan_starts_on') or timezone.localdate(),
+        )
+        generar_cuotas(plan)
+        return plan
