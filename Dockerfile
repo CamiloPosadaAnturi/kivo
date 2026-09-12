@@ -36,9 +36,15 @@ WORKDIR /app
 # --locked exige que el lock esté al día: si alguien tocó pyproject.toml sin
 # volver a bloquear, el build falla en vez de instalar algo distinto.
 # --no-dev deja fuera las dependencias de desarrollo.
+#
+# Ojo: aquí NO va una caché de build montada (el flag --mount de BuildKit, en
+# modo cache). Se ve en muchos ejemplos, pero el builder de Railway exige que
+# el id de esa caché empiece por su id de servicio y no acepta variables ahí,
+# así que el Dockerfile quedaría amarrado a un servicio en particular. La
+# caché de capas de Docker ya hace el trabajo: mientras uv.lock no cambie,
+# esta capa no se vuelve a ejecutar.
 COPY pyproject.toml uv.lock .python-version ./
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --locked --no-dev --no-install-project
+RUN uv sync --locked --no-dev --no-install-project
 
 COPY . .
 

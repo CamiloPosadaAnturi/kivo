@@ -2675,6 +2675,9 @@ class DeploymentSettingsTests(TestCase):
         self.assertNotIn('pip install', dockerfile)
         # El entorno vive fuera de /app: en desarrollo el código se monta encima
         self.assertIn('UV_PROJECT_ENVIRONMENT=/opt/venv', dockerfile)
+        # Sin cache mounts: el builder de Railway los rechaza si el id no
+        # empieza por su id de servicio, y ahí no se pueden usar variables.
+        self.assertNotIn('--mount=type=cache', dockerfile)
 
     def _pyproject(self):
         import tomllib
