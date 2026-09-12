@@ -175,3 +175,15 @@ cython_debug/
 
 # Capturas que la app de escritorio guarda al enviar archivos al chat
 Claude outputs/
+
+# Kivo
+staticfiles/
+demo_local.sqlite3
+*.sqlite3
+
+# uv administra el entorno en .venv (ya ignorado más arriba), pero uv.lock,
+# pyproject.toml y .python-version SÍ van a git: son los que hacen que todos
+# —tu máquina, Docker y el servidor— instalen exactamente lo mismo.
+!uv.lock
+!pyproject.toml
+!.python-version

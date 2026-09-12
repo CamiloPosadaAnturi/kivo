@@ -2409,3 +2409,293 @@ class BillingTests(TestCase):
         self.assertEqual(respuesta.status_code, 302)
         empresa = Company.objects.get(name='Panadería La Espiga S.A.S.')
         self.assertFalse(Plan.objects.filter(company=empresa).exists())
+
+
+class SeedPayrollCommandTests(TestCase):
+    """El comando que carga dos empleados y una quincena para poder ver la nómina."""
+
+    def setUp(self):
+        self.company = Company.objects.create(name='Panadería La Espiga')
+        self.business = Business.objects.create(company=self.company, name='La Espiga Centro')
+        self.admin = User.objects.create_user(
+            username='marta', password='clave12345', role='admin',
+            company=self.company, business=self.business)
+
+    def _correr(self, **opciones):
+        from io import StringIO
+        from django.core.management import call_command
+        salida = StringIO()
+        call_command('seed_payroll', negocio=self.business.name, stdout=salida, **opciones)
+        return salida.getvalue()
+
+    def test_it_loads_two_employees_and_a_settled_period(self):
+        from payroll.models import Employee, PayrollPeriod, Payslip
+        salida = self._correr()
+
+        empleados = Employee.objects.filter(business=self.business)
+        self.assertEqual(empleados.count(), 2)
+        self.assertEqual(set(empleados.values_list('first_name', flat=True)),
+                         {'Marta', 'Andrés'})
+
+        periodo = PayrollPeriod.objects.get(business=self.business)
+        self.assertEqual(periodo.status, PayrollPeriod.SETTLED)
+        self.assertEqual(Payslip.objects.filter(period=periodo).count(), 2)
+
+        # 2.600.000 y 1.423.500 por quincena = 1.300.000 + 711.750
+        self.assertEqual(periodo.totals['devengado'], Decimal('2011750.00'))
+        self.assertEqual(periodo.totals['neto'], Decimal('1850810.00'))
+        self.assertIn('Nómina de ejemplo lista', salida)
+
+    def test_running_it_twice_does_not_duplicate(self):
+        from payroll.models import Employee, PayrollPeriod, Payslip
+        self._correr()
+        salida = self._correr()
+        self.assertEqual(Employee.objects.filter(business=self.business).count(), 2)
+        self.assertEqual(PayrollPeriod.objects.filter(business=self.business).count(), 1)
+        self.assertEqual(Payslip.objects.filter(business=self.business).count(), 2)
+        self.assertIn('ya existía', salida)
+
+    def test_the_benefits_flag_turns_them_on(self):
+        from payroll.models import PayrollPeriod
+        self._correr(prestaciones=True)
+        periodo = PayrollPeriod.objects.get(business=self.business)
+        self.assertTrue(periodo.uses_social_benefits)
+        self.assertGreater(periodo.totals['prestaciones'], Decimal('0'))
+        # y el neto del empleado no cambia: no se le descuentan
+        self.assertEqual(periodo.totals['neto'], Decimal('1850810.00'))
+
+    def test_paying_needs_an_account_with_money(self):
+        from payroll.models import PayrollPeriod
+        salida = self._correr(pagar=True)
+        periodo = PayrollPeriod.objects.get(business=self.business)
+        self.assertEqual(periodo.status, PayrollPeriod.SETTLED)
+        self.assertIn('Ninguna cuenta tiene', salida)
+
+    def test_with_a_funded_account_it_pays_and_registers_the_expense(self):
+        from payroll.models import PayrollPeriod
+        BankAccount.objects.create(
+            business=self.business, kind=BankAccount.BANK, name='Bancolombia',
+            bank_name='Bancolombia', account_number='001',
+            opening_balance=Decimal('5000000'))
+
+        self._correr(pagar=True)
+        periodo = PayrollPeriod.objects.get(business=self.business)
+        self.assertEqual(periodo.status, PayrollPeriod.PAID)
+        self.assertIsNotNone(periodo.payment_expense)
+        self.assertEqual(periodo.payment_expense.amount, Decimal('1850810.00'))
+        self.assertEqual(periodo.payment_expense.category.name, 'Nómina')
+
+    def test_cleaning_removes_what_it_created(self):
+        from payroll.models import Employee, PayrollPeriod
+        self._correr()
+        self._correr(limpiar=True)
+        self.assertEqual(Employee.objects.filter(business=self.business).count(), 0)
+        self.assertEqual(PayrollPeriod.objects.filter(business=self.business).count(), 0)
+
+    def test_cleaning_respects_a_period_that_was_already_paid(self):
+        from payroll.models import PayrollPeriod
+        BankAccount.objects.create(
+            business=self.business, kind=BankAccount.BANK, name='Bancolombia',
+            account_number='001', opening_balance=Decimal('5000000'))
+        self._correr(pagar=True)
+
+        salida = self._correr(limpiar=True)
+        self.assertEqual(PayrollPeriod.objects.filter(business=self.business).count(), 1)
+        self.assertIn('ya se pagaron', salida)
+
+    def test_it_asks_which_business_when_there_are_several(self):
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        Business.objects.create(company=self.company, name='La Espiga Norte')
+        with self.assertRaises(CommandError) as ctx:
+            call_command('seed_payroll')
+        self.assertIn('--negocio', str(ctx.exception))
+
+    def test_an_unknown_business_is_reported(self):
+        from django.core.management import call_command
+        from django.core.management.base import CommandError
+        with self.assertRaises(CommandError):
+            call_command('seed_payroll', negocio='Negocio que no existe')
+
+    def test_the_seeded_payroll_is_visible_in_the_interface(self):
+        from payroll.models import PayrollPeriod
+        self._correr()
+        periodo = PayrollPeriod.objects.get(business=self.business)
+        self.client.login(username='marta', password='clave12345')
+        html = self.client.get(
+            reverse('payroll:period_detail', args=[periodo.pk])).content.decode()
+        self.assertIn('Marta Ruiz', html)
+        self.assertIn('Andrés Castaño', html)
+
+
+class DeploymentSettingsTests(TestCase):
+    """
+    Que la configuración de despliegue no se rompa sin que nadie se entere.
+
+    Estas pruebas no levantan Docker: revisan que los ajustes y los archivos
+    que el despliegue necesita estén donde deben.
+    """
+
+    def test_debug_is_off_unless_someone_asks_for_it(self):
+        """El descuido peligroso es dejar DEBUG prendido en el servidor."""
+        from config.settings import env_bool
+        self.assertFalse(env_bool('VARIABLE_QUE_NO_EXISTE'))
+        self.assertFalse(env_bool('VARIABLE_QUE_NO_EXISTE', False))
+
+    def test_env_bool_understands_the_usual_answers(self):
+        import os
+        from config.settings import env_bool
+        for valor in ('1', 'true', 'True', 'yes', 'si', 'sí', 'on'):
+            os.environ['KIVO_PRUEBA_BOOL'] = valor
+            with self.subTest(valor=valor):
+                self.assertTrue(env_bool('KIVO_PRUEBA_BOOL'))
+        for valor in ('0', 'false', 'no', ''):
+            os.environ['KIVO_PRUEBA_BOOL'] = valor
+            with self.subTest(valor=valor):
+                self.assertFalse(env_bool('KIVO_PRUEBA_BOOL'))
+        del os.environ['KIVO_PRUEBA_BOOL']
+
+    def test_env_list_splits_and_cleans(self):
+        import os
+        from config.settings import env_list
+        os.environ['KIVO_PRUEBA_LISTA'] = ' kivo.com.co , www.kivo.com.co ,, '
+        self.assertEqual(env_list('KIVO_PRUEBA_LISTA'),
+                         ['kivo.com.co', 'www.kivo.com.co'])
+        del os.environ['KIVO_PRUEBA_LISTA']
+        self.assertEqual(env_list('KIVO_PRUEBA_LISTA', ['localhost']), ['localhost'])
+
+    def test_whitenoise_serves_the_static_files(self):
+        from django.conf import settings
+        self.assertIn('whitenoise.middleware.WhiteNoiseMiddleware', settings.MIDDLEWARE)
+        # Va justo después del middleware de seguridad, como pide su documentación
+        self.assertEqual(
+            settings.MIDDLEWARE.index('whitenoise.middleware.WhiteNoiseMiddleware'),
+            settings.MIDDLEWARE.index('django.middleware.security.SecurityMiddleware') + 1)
+        self.assertIn('whitenoise', settings.STORAGES['staticfiles']['BACKEND'])
+
+    def test_collectstatic_has_somewhere_to_put_things(self):
+        from django.conf import settings
+        self.assertTrue(settings.STATIC_ROOT)
+        self.assertNotIn(settings.STATIC_ROOT, settings.STATICFILES_DIRS)
+
+    def test_the_jfif_images_have_a_real_media_type(self):
+        """El logo y el fondo del login son .jfif; sin esto salen como binario."""
+        import mimetypes
+        from django.conf import settings
+        self.assertEqual(mimetypes.guess_type('logo.jfif')[0], 'image/jpeg')
+        self.assertEqual(settings.WHITENOISE_MIMETYPES['.jfif'], 'image/jpeg')
+
+    def test_a_database_url_wins_over_the_loose_variables(self):
+        """Railway y Render entregan la conexión en una sola variable."""
+        from urllib.parse import urlparse, unquote
+        url = 'postgresql://usuario:cla%2Fve@db.interno:5433/kivo_prod'
+        partes = urlparse(url)
+        self.assertEqual(partes.hostname, 'db.interno')
+        self.assertEqual(partes.port, 5433)
+        self.assertEqual(unquote(partes.path.lstrip('/')), 'kivo_prod')
+        # La clave puede traer caracteres escapados
+        self.assertEqual(unquote(partes.password), 'cla/ve')
+
+    def test_the_files_the_deploy_needs_are_in_the_repo(self):
+        from django.conf import settings
+        esperados = [
+            'Dockerfile', 'docker-compose.yml', 'docker-compose.prod.yml',
+            'docker/entrypoint.sh', 'docker/Caddyfile',
+            '.dockerignore', '.env.example', 'README.md',
+            # uv: las dependencias, sus versiones exactas y el Python del proyecto
+            'pyproject.toml', 'uv.lock', '.python-version',
+            # Sin esto Git en Windows le mete CRLF al entrypoint y el
+            # contenedor no arranca, con un error que no explica nada.
+            '.gitattributes',
+        ]
+        for nombre in esperados:
+            with self.subTest(archivo=nombre):
+                self.assertTrue((settings.BASE_DIR / nombre).exists(),
+                                f'Falta {nombre}')
+
+    def test_the_secrets_never_enter_the_image(self):
+        from django.conf import settings
+        ignorados = (settings.BASE_DIR / '.dockerignore').read_text(encoding='utf-8')
+        for linea in ('.env', '.venv', '*.sqlite3', 'staticfiles/'):
+            with self.subTest(linea=linea):
+                self.assertIn(linea, ignorados)
+
+    def test_the_pinned_dependencies_cover_what_the_app_imports(self):
+        """Todo lo que la app importa está declarado y con versión fija."""
+        proyecto = self._pyproject()
+        declaradas = ' '.join(proyecto['project']['dependencies']).lower()
+        for paquete in ('django', 'psycopg2-binary', 'python-dotenv', 'pillow',
+                        'gunicorn', 'whitenoise'):
+            with self.subTest(paquete=paquete):
+                self.assertIn(f'{paquete}==', declaradas)
+
+    def test_there_is_no_leftover_pip_flow(self):
+        """
+        Dos gestores a la vez es la forma más fácil de desplegar una versión
+        distinta a la que probaste: el lock de uv es la única fuente.
+        """
+        from django.conf import settings
+        for viejo in ('requirements.txt', 'requirements-dev.txt', 'Pipfile',
+                      'poetry.lock'):
+            with self.subTest(archivo=viejo):
+                self.assertFalse((settings.BASE_DIR / viejo).exists(),
+                                 f'{viejo} sigue ahí y compite con uv.lock')
+
+    def test_the_lock_matches_what_pyproject_asks_for(self):
+        """El lock tiene que estar al día, o Docker instalaría otra cosa."""
+        from django.conf import settings
+        lock = (settings.BASE_DIR / 'uv.lock').read_text(encoding='utf-8')
+        proyecto = self._pyproject()
+
+        for declarada in proyecto['project']['dependencies']:
+            nombre, version = declarada.split('==')
+            with self.subTest(paquete=nombre):
+                self.assertIn(f'name = "{nombre.lower()}"', lock)
+                self.assertIn(f'version = "{version}"', lock)
+
+        # Y el Python del lock es el mismo que pide el proyecto
+        self.assertIn(proyecto['project']['requires-python'], lock)
+
+    def test_the_project_python_is_the_one_the_environment_uses(self):
+        from django.conf import settings
+        anotado = (settings.BASE_DIR / '.python-version').read_text(encoding='utf-8').strip()
+        pedido = self._pyproject()['project']['requires-python']
+        self.assertTrue(pedido.startswith('>='))
+        self.assertTrue(anotado.startswith(pedido.removeprefix('>=')),
+                        f'.python-version dice {anotado} y pyproject pide {pedido}')
+
+    def test_the_image_installs_with_uv_and_a_current_lock(self):
+        from django.conf import settings
+        dockerfile = (settings.BASE_DIR / 'Dockerfile').read_text(encoding='utf-8')
+        self.assertIn('ghcr.io/astral-sh/uv', dockerfile)
+        # --locked revienta el build si el lock quedó desactualizado
+        self.assertIn('uv sync --locked', dockerfile)
+        # y las dependencias de desarrollo no entran en producción
+        self.assertIn('--no-dev', dockerfile)
+        self.assertNotIn('pip install', dockerfile)
+        # El entorno vive fuera de /app: en desarrollo el código se monta encima
+        self.assertIn('UV_PROJECT_ENVIRONMENT=/opt/venv', dockerfile)
+
+    def _pyproject(self):
+        import tomllib
+        from django.conf import settings
+        with open(settings.BASE_DIR / 'pyproject.toml', 'rb') as archivo:
+            return tomllib.load(archivo)
+
+    def test_https_is_not_forced_by_the_app_itself(self):
+        """
+        El redirect a https lo hace el proxy de adelante. Si la app lo forzara
+        sin que el proxy avise por la cabecera, quedaría en un bucle de
+        redirecciones, y el cliente de pruebas ni siquiera podría entrar.
+        """
+        from config.settings import env_bool
+        self.assertFalse(env_bool('SECURE_SSL_REDIRECT', False))
+
+    def test_the_entrypoint_migrates_before_serving(self):
+        from django.conf import settings
+        guion = (settings.BASE_DIR / 'docker' / 'entrypoint.sh').read_text(encoding='utf-8')
+        self.assertIn('manage.py migrate', guion)
+        self.assertIn('collectstatic', guion)
+        self.assertIn('exec "$@"', guion)
+        # Y se planta si la base nunca responde, en vez de arrancar a medias
+        self.assertIn('exit 1', guion)

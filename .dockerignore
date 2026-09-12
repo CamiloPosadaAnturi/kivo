@@ -1,0 +1,34 @@
+# Lo que NO entra en la imagen. Menos peso y, sobre todo, nada de secretos.
+
+.env
+*.env
+!.env.example
+
+.git
+.gitignore
+.venv
+venv
+env
+
+# El entorno se arma dentro de la imagen con uv sync
+
+__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.ruff_cache
+.mypy_cache
+
+# Bases locales y estáticos generados: se rehacen dentro del contenedor.
+*.sqlite3
+staticfiles/
+media/
+
+# Cosas de tu máquina que no le sirven al servidor
+Claude outputs/
+assets/
+*.md
+!README.md
+.vscode
+.idea
+*.log

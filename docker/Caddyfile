@@ -1,0 +1,22 @@
+# Caddy pide y renueva el certificado HTTPS solo. Lo único que necesita es que
+# el dominio de DOMINIO apunte a la IP de este servidor.
+
+{$DOMINIO} {
+	encode zstd gzip
+
+	# Los estáticos los sirve WhiteNoise dentro de la app, así que todo pasa
+	# derecho a gunicorn.
+	reverse_proxy web:8000
+
+	header {
+		# Que no se adivine el tipo de archivo ni se pueda montar la app
+		# dentro de un iframe ajeno.
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+		-Server
+	}
+
+	log {
+		output stdout
+	}
+}

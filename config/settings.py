@@ -10,9 +10,27 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import mimetypes
 from pathlib import Path
+from urllib.parse import urlparse, unquote
 from dotenv import load_dotenv
 import os
+
+
+def env_bool(nombre, por_defecto=False):
+    """Lee una variable de entorno que representa sí/no."""
+    valor = os.getenv(nombre)
+    if valor is None:
+        return por_defecto
+    return valor.strip().lower() in ('1', 'true', 'yes', 'si', 'sí', 'on')
+
+
+def env_list(nombre, por_defecto=()):
+    """Lee una lista separada por comas, sin espacios sueltos ni vacíos."""
+    valor = os.getenv(nombre)
+    if not valor:
+        return list(por_defecto)
+    return [parte.strip() for parte in valor.split(',') if parte.strip()]
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -28,10 +46,21 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("SECRET_KEY")
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+# DEBUG queda apagado si nadie dice lo contrario: en producción se olvida
+# prenderlo al revés. Para trabajar local pon DEBUG=True en tu .env.
+DEBUG = env_bool('DEBUG', False)
 
-ALLOWED_HOSTS = ['*']
+# Los dominios desde los que se puede servir la app. En local basta con
+# localhost; en producción se ponen en ALLOWED_HOSTS del entorno.
+ALLOWED_HOSTS = env_list(
+    'ALLOWED_HOSTS', ['localhost', '127.0.0.1', '[::1]', 'testserver'])
+
+# Django exige el origen completo (con https://) para aceptar formularios
+# detrás de un proxy. Se deduce de los dominios permitidos y del SITE_URL.
+CSRF_TRUSTED_ORIGINS = env_list('CSRF_TRUSTED_ORIGINS') or [
+    f'https://{host}' for host in ALLOWED_HOSTS
+    if host not in ('localhost', '127.0.0.1', '[::1]', 'testserver', '*')
+]
 
 # Dominio público del sitio. Se usa en las URLs canónicas, el sitemap y la
 # vista previa al compartir en redes. Cambia SITE_URL en el .env cuando tengas
@@ -75,6 +104,9 @@ LOGOUT_REDIRECT_URL = 'index'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    # WhiteNoise sirve los estáticos ya comprimidos, sin necesitar un nginx
+    # aparte. Va justo después del middleware de seguridad, como pide su doc.
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -110,16 +142,36 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-DATABASES = {
-    "default": {
-        "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("DB_NAME"),
-        "USER": os.getenv("DB_USER"),
-        "PASSWORD": os.getenv("DB_PASSWORD"),
-        "HOST": os.getenv("DB_HOST"),
-        "PORT": os.getenv("DB_PORT"),
+# Railway, Render y compañía entregan la conexión en una sola variable;
+# en local siguen sirviendo las variables sueltas del .env.
+DATABASE_URL = os.getenv('DATABASE_URL')
+
+if DATABASE_URL:
+    _url = urlparse(DATABASE_URL)
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": unquote(_url.path.lstrip('/')),
+            "USER": unquote(_url.username or ''),
+            "PASSWORD": unquote(_url.password or ''),
+            "HOST": _url.hostname or '',
+            "PORT": str(_url.port or ''),
+        }
     }
-}
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("DB_NAME"),
+            "USER": os.getenv("DB_USER"),
+            "PASSWORD": os.getenv("DB_PASSWORD"),
+            "HOST": os.getenv("DB_HOST"),
+            "PORT": os.getenv("DB_PORT"),
+        }
+    }
+
+# Reutilizar la conexión evita abrir una nueva en cada request.
+DATABASES['default']['CONN_MAX_AGE'] = int(os.getenv('DB_CONN_MAX_AGE', '60'))
 
 
 # Password validation
@@ -159,8 +211,26 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
+# El logo y el fondo del login son .jfif, una extensión que ni Python ni
+# WhiteNoise traen en su tabla. Sin esto se sirven como binario.
+mimetypes.add_type('image/jpeg', '.jfif', True)
+WHITENOISE_MIMETYPES = {'.jfif': 'image/jpeg'}
+
 STATIC_URL = 'static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+# Donde collectstatic deja todo junto para que WhiteNoise lo sirva.
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+STORAGES = {
+    'default': {
+        'BACKEND': 'django.core.files.storage.FileSystemStorage',
+    },
+    'staticfiles': {
+        # Comprime y les pone hash a los archivos, así el navegador los
+        # cachea para siempre y se actualizan solos al cambiar.
+        'BACKEND': 'whitenoise.storage.CompressedManifestStaticFilesStorage',
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
@@ -169,3 +239,50 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+
+# ---------------------------------------------------------------------------
+# Producción
+# ---------------------------------------------------------------------------
+# Solo aplica cuando DEBUG está apagado, para no estorbar en local (las
+# cookies seguras y el redirect a https romperían el runserver en http).
+
+if not DEBUG:
+    # El proxy de la plataforma (o Caddy en un VPS) termina el TLS y avisa
+    # por esta cabecera que la petición venía por https.
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+    # Apagado por defecto porque el proxy de adelante (Caddy, Railway) ya
+    # manda todo por https. Prenderlo sin que el proxy avise por la cabecera
+    # de arriba deja la app en un bucle de redirecciones.
+    SECURE_SSL_REDIRECT = env_bool('SECURE_SSL_REDIRECT', False)
+
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SESSION_COOKIE_HTTPONLY = True
+
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = 'DENY'
+    SECURE_REFERRER_POLICY = 'same-origin'
+
+    # HSTS: arranca en 0 para no quedar amarrado si algo sale mal, y se sube
+    # a 31536000 (un año) cuando ya sepas que el dominio va siempre por https.
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '0'))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = env_bool('SECURE_HSTS_INCLUDE_SUBDOMAINS', False)
+    SECURE_HSTS_PRELOAD = env_bool('SECURE_HSTS_PRELOAD', False)
+
+    # Los errores quedan en la salida del contenedor, que es donde los busca
+    # cualquier plataforma de despliegue.
+    LOGGING = {
+        'version': 1,
+        'disable_existing_loggers': False,
+        'handlers': {
+            'console': {'class': 'logging.StreamHandler'},
+        },
+        'root': {'handlers': ['console'], 'level': 'INFO'},
+        'loggers': {
+            'django.request': {
+                'handlers': ['console'], 'level': 'ERROR', 'propagate': False,
+            },
+        },
+    }

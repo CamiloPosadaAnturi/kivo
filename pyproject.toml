@@ -1,0 +1,45 @@
+[project]
+name = "kivo"
+version = "1.0.0"
+description = "Software de gestión para mipymes en Colombia: ingresos, egresos, caja, inventario, compras, nómina y reportes."
+readme = "README.md"
+requires-python = ">=3.12"
+authors = [{ name = "Juan Camilo Posada Anturi" }]
+
+# Las mismas versiones que ya estaban fijas en requirements.txt. No se subió
+# ninguna al migrar a uv: la idea era cambiar de herramienta, no de paquetes.
+dependencies = [
+    "django==6.0.7",
+    "psycopg2-binary==2.9.12",
+    "python-dotenv==1.2.2",
+    "pillow==12.3.0",
+    # Servidor de producción y servidor de archivos estáticos
+    "gunicorn==26.2.0",
+    "whitenoise==6.12.0",
+]
+
+# Dependencias que solo se usan mientras se desarrolla: nunca entran en la
+# imagen de producción, porque allá se instala con `uv sync --no-dev`.
+#
+# Hoy el proyecto no necesita ninguna (las pruebas corren con el runner que
+# trae Django), así que el grupo está vacío a propósito. Para agregar algo:
+#
+#   uv add --dev ruff
+#
+[dependency-groups]
+dev = []
+
+[tool.uv]
+# No es un paquete instalable, es una aplicación: uv no intenta construir un
+# wheel de Kivo, solo administra sus dependencias.
+package = false
+
+# Las dependencias indirectas (las que arrastra Django) quedan clavadas en las
+# mismas versiones que ya estaban instaladas antes de migrar a uv, para que el
+# cambio de herramienta no traiga de regalo actualizaciones que nadie pidió.
+# Cuando quieras subirlas, es a propósito y de una sola vez: `uv lock --upgrade`.
+constraint-dependencies = [
+    "asgiref==3.12.1",
+    "sqlparse==0.5.5",
+    "tzdata==2026.3",
+]

@@ -1,0 +1,61 @@
+# Kivo para trabajar en tu máquina: la app y su Postgres, sin instalar nada más.
+#
+#   docker compose up            arranca todo (http://localhost:8000)
+#   docker compose up -d         igual, pero en segundo plano
+#   docker compose logs -f web   ver lo que pasa
+#   docker compose down          apagar
+#   docker compose down -v       apagar y BORRAR la base (ojo)
+#
+# El código está montado como volumen, así que lo que edites en Windows se
+# recarga solo: no hay que reconstruir la imagen para cambiar una vista. Las
+# dependencias sí viven dentro de la imagen (uv las instala en /opt/venv), así
+# que después de un `uv add` toca `docker compose build`.
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-kivo}
+      POSTGRES_USER: ${DB_USER:-kivo}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-kivo}
+    volumes:
+      - datos_postgres:/var/lib/postgresql/data
+    ports:
+      # Expuesto para poder conectarte con pgAdmin o DBeaver si quieres.
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-kivo} -d ${DB_NAME:-kivo}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  web:
+    build: .
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      DEBUG: "True"
+      SECRET_KEY: ${SECRET_KEY:-clave-solo-para-desarrollo-no-usar-en-produccion}
+      ALLOWED_HOSTS: localhost,127.0.0.1,[::1],testserver
+      DB_NAME: ${DB_NAME:-kivo}
+      DB_USER: ${DB_USER:-kivo}
+      DB_PASSWORD: ${DB_PASSWORD:-kivo}
+      DB_HOST: db
+      DB_PORT: 5432
+      SITE_URL: ${SITE_URL:-http://localhost:8000}
+      # En desarrollo el runserver sirve los estáticos solo; no hace falta
+      # recogerlos en cada arranque.
+      KIVO_SKIP_COLLECTSTATIC: "1"
+    volumes:
+      - .:/app
+      - media:/app/media
+    ports:
+      - "8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  datos_postgres:
+  media:

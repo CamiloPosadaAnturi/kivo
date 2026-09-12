@@ -1,0 +1,8 @@
+# Los scripts del contenedor tienen que quedar con saltos de línea de Unix.
+# Si Git los convierte a CRLF al clonar en Windows, el contenedor no arranca
+# y el error que sale ("/bin/sh: not found") no dice nada de esto.
+*.sh text eol=lf
+docker/entrypoint.sh text eol=lf
+docker/Caddyfile text eol=lf
+Dockerfile text eol=lf
+*.py text eol=lf
