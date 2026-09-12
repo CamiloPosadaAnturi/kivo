@@ -9,6 +9,21 @@
         </a>
     </div>
     
+    <form method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <input type="search" name="q" value="{{ filtros.q }}" placeholder="Nombre, NIT, ciudad o contacto"
+               class="sm:col-span-2 w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+        <div class="flex gap-2 items-center">
+            <label class="flex items-center gap-2 text-xs text-kivo-pizarra cursor-pointer whitespace-nowrap">
+                <input type="checkbox" name="activos" value="todos" {% if filtros.activos == 'todos' %}checked{% endif %} class="w-4 h-4 rounded border-gray-300">
+                Ver inactivos
+            </label>
+            <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium flex-1">Buscar</button>
+            {% if has_filters %}
+            <a href="{% url 'purchases:supplier_list' %}" class="px-3 py-2 border border-kivo-azul-claro text-kivo-pizarra rounded-xl text-sm hover:bg-gray-50">Limpiar</a>
+            {% endif %}
+        </div>
+    </form>
+
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
@@ -51,5 +66,7 @@
             </tbody>
         </table>
     </div>
+
+    {% include 'includes/pagination.html' with total_label='proveedores' %}
 </div>
 {% endblock %}

@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse_lazy
@@ -40,7 +41,27 @@ class SupplierListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = Supplier
     template_name = 'purchases/supplier_list.html'
     context_object_name = 'suppliers'
-    paginate_by = 10
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        texto = (self.request.GET.get('q') or '').strip()
+        if texto:
+            qs = qs.filter(
+                Q(name__icontains=texto) | Q(nit__icontains=texto) |
+                Q(city__icontains=texto) | Q(contact_name__icontains=texto))
+        if self.request.GET.get('activos') != 'todos':
+            qs = qs.filter(is_active=True)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['filtros'] = {
+            'q': self.request.GET.get('q', ''),
+            'activos': self.request.GET.get('activos', ''),
+        }
+        ctx['has_filters'] = any(ctx['filtros'].values())
+        return ctx
 
 
 class SupplierDetailView(LoginRequiredMixin, TenantScopedMixin, DetailView):
@@ -110,7 +131,36 @@ class PurchaseOrderListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = PurchaseOrder
     template_name = 'purchases/purchaseorder_list.html'
     context_object_name = 'purchase_orders'
-    paginate_by = 10
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('supplier', 'warehouse')
+
+        texto = (self.request.GET.get('q') or '').strip()
+        if texto:
+            qs = qs.filter(Q(number__icontains=texto) | Q(supplier__name__icontains=texto))
+
+        estado = self.request.GET.get('status')
+        if estado == 'abiertas':
+            qs = qs.filter(status__in=['draft', 'sent', 'approved', 'partial'])
+        elif estado:
+            qs = qs.filter(status=estado)
+
+        # created_at reparte varias órdenes en el mismo segundo: sin el id
+        # como desempate, la paginación puede repetir filas.
+        return qs.order_by('-created_at', '-id')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['status_choices'] = ([('', 'Todos los estados'),
+                                  ('abiertas', 'Abiertas (sin cerrar)')]
+                                 + list(PurchaseOrder.STATUS_CHOICES))
+        ctx['filtros'] = {
+            'q': self.request.GET.get('q', ''),
+            'status': self.request.GET.get('status', ''),
+        }
+        ctx['has_filters'] = any(ctx['filtros'].values())
+        return ctx
 
 
 class PurchaseOrderDetailView(LoginRequiredMixin, TenantScopedMixin, DetailView):

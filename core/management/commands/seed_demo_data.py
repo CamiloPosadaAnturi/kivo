@@ -17,7 +17,7 @@ from datetime import timedelta
 from decimal import Decimal, ROUND_HALF_UP
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import models, transaction
 from django.db.models.signals import post_save, pre_delete
 from django.utils import timezone
 
@@ -29,6 +29,11 @@ from inventory.models import (
     InventoryMovement, Product, ProductCategory, TenantSetup, UnitOfMeasure, Warehouse,
 )
 from inventory.services import apply_stock_count, apply_stock_movement
+from payroll.models import (
+    ContractType, Department, Employee, JobPosition, PayrollConcept, PayrollPeriod,
+    Payslip, PayslipLine,
+)
+from payroll.services import close_period, pay_period, provision_payroll, settle_period
 from purchases import signals as purchase_signals
 from purchases.models import (
     PurchaseInvoice, PurchaseOrder, PurchaseOrderLine,
@@ -56,6 +61,34 @@ CATEGORIAS_EGRESO = [
     'Domicilios y transporte', 'Publicidad', 'Mantenimiento y aseo',
     'Impuestos y trámites', 'Otros gastos',
 ]
+
+# (cargo, departamento, salario base, cuántos)
+PLANTA = [
+    ('Administrador de tienda', 'Administración', 2_600_000, 1),
+    ('Contador', 'Administración', 2_200_000, 1),
+    ('Barista', 'Operación', 1_500_000, 4),
+    ('Panadero', 'Operación', 1_700_000, 2),
+    ('Auxiliar de cocina', 'Operación', 1_423_500, 2),
+    ('Cajero', 'Ventas', 1_423_500, 2),
+    ('Domiciliario', 'Ventas', 1_423_500, 2),
+    ('Mesero', 'Ventas', 1_423_500, 2),
+]
+
+NOMBRES_EMPLEADOS = [
+    'Camila', 'Andrés', 'Valentina', 'Santiago', 'Mariana', 'Sebastián', 'Laura',
+    'Juan', 'Daniela', 'Carlos', 'Paula', 'Felipe', 'Sara', 'Diego', 'Natalia',
+    'Miguel', 'Lucía', 'David', 'Carolina', 'Julián',
+]
+APELLIDOS_EMPLEADOS = [
+    'Ospina', 'Castaño', 'Ramírez', 'Gutiérrez', 'Vargas', 'Moreno', 'Zapata',
+    'Cardona', 'Quintero', 'Salazar', 'Muñoz', 'Restrepo', 'Arias', 'Bedoya',
+]
+
+MESES = {
+    1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril', 5: 'mayo', 6: 'junio',
+    7: 'julio', 8: 'agosto', 9: 'septiembre', 10: 'octubre', 11: 'noviembre',
+    12: 'diciembre',
+}
 
 BODEGAS = [
     ('Bodega principal', 'BOD-01', 'Calle 10 #5-20, Dagua', 'Marcela Ríos'),
@@ -229,6 +262,7 @@ class Command(BaseCommand):
         ajustes = self.ajustar_inventario(productos, bodegas, admin)
         ingresos, egresos = self.crear_movimientos_financieros(
             business, admin, empleado, cat_ingreso, cat_egreso, cuentas)
+        empleados, periodos, liquidaciones = self.crear_nomina(business, admin, cuentas)
 
         self.resumen(business, {
             'Cuentas bancarias': len(cuentas),
@@ -246,6 +280,9 @@ class Command(BaseCommand):
             'Movimientos de inventario': InventoryMovement.objects.filter(business=business).count(),
             'Ingresos': ingresos,
             'Egresos': egresos,
+            'Empleados': empleados,
+            'Periodos de nómina': periodos,
+            'Liquidaciones': liquidaciones,
         })
 
     # -- negocio y usuarios ------------------------------------------------
@@ -315,6 +352,14 @@ class Command(BaseCommand):
                 UnitOfMeasure.objects.filter(business=business).delete()
                 Warehouse.objects.filter(business=business).delete()
                 TenantSetup.objects.filter(business=business).delete()
+                PayslipLine.objects.filter(payslip__business=business).delete()
+                Payslip.objects.filter(business=business).delete()
+                PayrollPeriod.objects.filter(business=business).delete()
+                Employee.objects.filter(business=business).delete()
+                JobPosition.objects.filter(business=business).delete()
+                Department.objects.filter(business=business).delete()
+                ContractType.objects.filter(business=business).delete()
+                PayrollConcept.objects.filter(business=business).delete()
                 Income.objects.filter(business=business).delete()
                 Expense.objects.filter(business=business).delete()
                 Category.objects.filter(business=business).delete()
@@ -780,8 +825,11 @@ class Command(BaseCommand):
 
         egresos = 0
         for i in range(self.count):
+            # La categoría "Nómina" queda fuera del sorteo: esos egresos los
+            # crea el módulo de nómina al pagar cada periodo.
             categoria = random.choices(
-                cat_egreso, weights=[30, 14, 6, 12, 10, 8, 10, 5, 5], k=1)[0]
+                [c for c in cat_egreso if c.name != 'Nómina'],
+                weights=[34, 7, 13, 11, 9, 11, 7, 8], k=1)[0]
             bajo, alto = RANGO_EGRESO[categoria.name]
             metodo = random.choices(['transfer', 'cash', 'card'], weights=[45, 35, 20], k=1)[0]
             cuenta = self.cuenta_para(cuentas, metodo)
@@ -806,6 +854,121 @@ class Command(BaseCommand):
             egresos += 1
 
         return ingresos, egresos
+
+    # -- nómina ------------------------------------------------------------
+
+    def crear_nomina(self, business, admin, cuentas):
+        """
+        Planta de empleados y las últimas quincenas ya liquidadas.
+
+        Todo pasa por los servicios reales: el salario se prorratea, los
+        conceptos configurados se aplican y el pago sale de una cuenta con
+        saldo, así que los egresos de nómina cuadran con el banco.
+        """
+        provision_payroll(business)
+
+        indefinido = ContractType.objects.get(business=business, name='Término indefinido')
+        fijo = ContractType.objects.get(business=business, name='Término fijo')
+        servicios = ContractType.objects.get(
+            business=business, name='Prestación de servicios')
+
+        # El auxilio de transporte, como concepto editable. Es un valor fijo por
+        # liquidación, así que en quincenas se carga la mitad del mensual.
+        PayrollConcept.objects.filter(business=business, code='AUX-TRANS').update(
+            calculation=PayrollConcept.FIXED, value=price(100_000),
+            applies_by_default=True)
+
+        empleados = []
+        usados = set()
+        documento = 1_010_200_300
+        for cargo_nombre, depto_nombre, salario, cuantos in PLANTA:
+            depto, _ = Department.objects.get_or_create(
+                business=business, name=depto_nombre)
+            cargo, _ = JobPosition.objects.get_or_create(
+                business=business, name=cargo_nombre, defaults={'department': depto})
+
+            for _ in range(cuantos):
+                while True:
+                    nombre = random.choice(NOMBRES_EMPLEADOS)
+                    apellido = random.choice(APELLIDOS_EMPLEADOS)
+                    if (nombre, apellido) not in usados:
+                        usados.add((nombre, apellido))
+                        break
+                documento += random.randint(137, 941)
+                contrato = random.choices(
+                    [indefinido, fijo, servicios], weights=[65, 25, 10], k=1)[0]
+                antiguedad = random.randint(60, 1500)
+
+                empleado, _ = Employee.objects.get_or_create(
+                    business=business, document=str(documento),
+                    defaults={
+                        'first_name': nombre, 'last_name': apellido,
+                        'position': cargo, 'department': depto,
+                        'contract_type': contrato,
+                        'base_salary': price(salario),
+                        'hire_date': self.today - timedelta(days=antiguedad),
+                        'phone': f'31{random.randint(0, 9)} {random.randint(200, 899)} '
+                                 f'{random.randint(1000, 9999)}',
+                        'email': f'{nombre.lower()}.{apellido.lower()}@mitierra.co',
+                        'bank_name': random.choice(['Bancolombia', 'Davivienda', 'Nequi']),
+                        'account_type': random.choice(['savings', 'checking']),
+                        'account_number': str(random.randint(10**9, 10**10 - 1)),
+                    })
+                empleados.append(empleado)
+
+        periodos = self.crear_periodos_nomina(business, admin, cuentas)
+        liquidaciones = Payslip.objects.filter(business=business).count()
+        return len(empleados), len(periodos), liquidaciones
+
+    def crear_periodos_nomina(self, business, admin, cuentas):
+        """Las últimas seis quincenas: las viejas cerradas, la última abierta."""
+        preferida = max((c for c in cuentas if not c.is_cash),
+                        key=lambda c: c.current_balance, default=cuentas[0])
+
+        periodos = []
+        quincenas = self.ultimas_quincenas(6)
+        for indice, (inicio, fin) in enumerate(quincenas):
+            ultima = indice == len(quincenas) - 1
+            # La prima se causa en junio y diciembre: ahí se activan las prestaciones
+            prestaciones = fin.month in (6, 12) or indice == len(quincenas) - 2
+
+            periodo, creado = PayrollPeriod.objects.get_or_create(
+                business=business, start_date=inicio, end_date=fin,
+                defaults={
+                    'name': f'Quincena {"1" if inicio.day == 1 else "2"} '
+                            f'de {MESES[fin.month]} {fin.year}',
+                    'frequency': PayrollPeriod.BIWEEKLY,
+                    'payment_date': fin,
+                    'uses_social_benefits': prestaciones,
+                    'created_by': admin,
+                })
+            periodos.append(periodo)
+
+            if not creado or ultima:
+                continue  # la última queda abierta, para poder liquidarla en la demo
+
+            settle_period(periodo, user=admin)
+            total = periodo.payslips.aggregate(t=models.Sum('net_pay'))['t'] or Decimal('0')
+            cuenta = self.cuenta_con_saldo(cuentas, preferida, total)
+            if cuenta is None:
+                continue  # sin plata no se paga: la regla del negocio manda
+            pay_period(periodo, cuenta, admin)
+            close_period(periodo)
+
+        return periodos
+
+    def ultimas_quincenas(self, cuantas):
+        """Rangos 1–15 y 16–fin de mes, de la más antigua a la más reciente."""
+        rangos = []
+        ancla = self.today.replace(day=1)
+        for _ in range(cuantas):
+            fin_mes = (ancla.replace(day=28) + timedelta(days=4)).replace(day=1) \
+                - timedelta(days=1)
+            rangos.append((ancla.replace(day=16), fin_mes))
+            rangos.append((ancla, ancla.replace(day=15)))
+            ancla = (ancla - timedelta(days=1)).replace(day=1)
+        rangos = [r for r in rangos if r[1] <= self.today]
+        return sorted(rangos)[-cuantas:]
 
     # -- salida ------------------------------------------------------------
 

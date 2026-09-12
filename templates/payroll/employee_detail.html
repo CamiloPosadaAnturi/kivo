@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% block title %}{{ empleado.full_name }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto space-y-6">
+    <div>
+        <a href="{% url 'payroll:employee_list' %}" class="inline-flex items-center gap-2 text-kivo-gris hover:text-kivo-petroleo transition-colors text-sm mb-4">
+            <i class="fas fa-arrow-left"></i> Volver a empleados
+        </a>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-kivo-oscuro">{{ empleado.full_name }}</h1>
+                <p class="text-kivo-gris">{{ empleado.position.name }}{% if empleado.department %} · {{ empleado.department.name }}{% endif %}</p>
+            </div>
+            <a href="{% url 'payroll:employee_update' empleado.pk %}" class="px-4 py-2 bg-kivo-petroleo text-white rounded-xl text-sm font-semibold hover:opacity-90"><i class="fas fa-edit mr-2"></i>Editar</a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div>{% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% else %}bg-blue-50 text-blue-800{% endif %}">{{ message }}</div>
+    {% endfor %}</div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div class="bg-kivo-petroleo rounded-2xl p-5 text-white shadow-sm">
+            <p class="text-xs uppercase tracking-wider opacity-80">Salario base</p>
+            <p class="text-2xl font-bold mt-1">${{ empleado.base_salary|floatformat:0 }}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Contrato</p>
+            <p class="text-sm font-bold text-kivo-oscuro mt-1">{{ empleado.contract_type.name }}</p>
+            <p class="text-xs text-kivo-gris mt-1">{% if empleado.contract_type.causes_social_benefits %}Causa prestaciones{% else %}Sin prestaciones{% endif %}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Ingreso</p>
+            <p class="text-sm font-bold text-kivo-oscuro mt-1">{{ empleado.hire_date|date:"d/m/Y" }}</p>
+            {% if empleado.termination_date %}<p class="text-xs text-red-500 mt-1">Retiro: {{ empleado.termination_date|date:"d/m/Y" }}</p>{% endif %}
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Estado</p>
+            <p class="text-sm font-bold {% if empleado.is_active %}text-green-600{% else %}text-kivo-gris{% endif %} mt-1">{{ empleado.get_status_display }}</p>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+            <h2 class="font-bold text-kivo-oscuro mb-4">Datos de contacto</h2>
+            <dl class="space-y-3 text-sm">
+                <div class="flex justify-between"><dt class="text-kivo-gris">Documento</dt><dd class="text-kivo-oscuro font-medium">{{ empleado.get_document_type_display }} {{ empleado.document }}</dd></div>
+                <div class="flex justify-between"><dt class="text-kivo-gris">Teléfono</dt><dd class="text-kivo-oscuro">{{ empleado.phone|default:"—" }}</dd></div>
+                <div class="flex justify-between"><dt class="text-kivo-gris">Correo</dt><dd class="text-kivo-oscuro">{{ empleado.email|default:"—" }}</dd></div>
+                <div class="flex justify-between"><dt class="text-kivo-gris">Dirección</dt><dd class="text-kivo-oscuro text-right">{{ empleado.address|default:"—" }}</dd></div>
+                <div class="flex justify-between"><dt class="text-kivo-gris">Usuario en Kivo</dt><dd class="text-kivo-oscuro">{{ empleado.user.username|default:"Sin enlazar" }}</dd></div>
+            </dl>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+            <h2 class="font-bold text-kivo-oscuro mb-4">Datos de pago</h2>
+            <dl class="space-y-3 text-sm">
+                <div class="flex justify-between"><dt class="text-kivo-gris">Banco</dt><dd class="text-kivo-oscuro">{{ empleado.bank_name|default:"—" }}</dd></div>
+                <div class="flex justify-between"><dt class="text-kivo-gris">Tipo de cuenta</dt><dd class="text-kivo-oscuro">{{ empleado.get_account_type_display|default:"—" }}</dd></div>
+                <div class="flex justify-between"><dt class="text-kivo-gris">Número</dt><dd class="text-kivo-oscuro">{{ empleado.account_number|default:"—" }}</dd></div>
+            </dl>
+            {% if empleado.notes %}
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <p class="text-xs text-kivo-gris uppercase mb-1">Observaciones</p>
+                <p class="text-sm text-kivo-pizarra">{{ empleado.notes }}</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="font-bold text-kivo-oscuro">Historial de liquidaciones</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead>
+                    <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                        <th class="px-4 py-3 text-left">Periodo</th>
+                        <th class="px-4 py-3 text-right">Días</th>
+                        <th class="px-4 py-3 text-right">Devengado</th>
+                        <th class="px-4 py-3 text-right">Deducciones</th>
+                        <th class="px-4 py-3 text-right">Neto</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for l in liquidaciones %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm"><a href="{{ l.get_absolute_url }}" class="font-medium text-kivo-oscuro hover:text-kivo-petroleo">{{ l.period.name }}</a></td>
+                        <td class="px-4 py-3 text-sm text-right text-kivo-gris">{{ l.worked_days|floatformat:"-2" }}</td>
+                        <td class="px-4 py-3 text-sm text-right text-kivo-oscuro">${{ l.total_earnings|floatformat:0 }}</td>
+                        <td class="px-4 py-3 text-sm text-right text-red-500">${{ l.total_deductions|floatformat:0 }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-bold text-kivo-oscuro">${{ l.net_pay|floatformat:0 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="px-6 py-10 text-center text-kivo-gris text-sm">Todavía no tiene liquidaciones.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

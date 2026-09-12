@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-kivo-oscuro">{{ titulo }}</h1>
+            <p class="text-kivo-gris mt-1">{{ subtitulo }}</p>
+        </div>
+        <a href="{% url url_crear %}" class="px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl flex items-center gap-2 hover:opacity-90 transition-all">
+            <i class="fas fa-plus"></i> Nuevo
+        </a>
+    </div>
+
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800{% else %}bg-blue-50 text-blue-800{% endif %}">{{ message }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="get" class="flex flex-col sm:flex-row gap-3">
+        <input type="search" name="q" value="{{ filtros.q }}" placeholder="Buscar por nombre"
+               class="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+        {% if tipos %}
+        <select name="tipo" class="px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+            <option value="">Ingresos y deducciones</option>
+            {% for valor, etiqueta in tipos %}
+            <option value="{{ valor }}" {% if filtros.tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+        </select>
+        {% endif %}
+        <button type="submit" class="btn-kivo text-white px-6 py-2 rounded-xl text-sm font-medium">Buscar</button>
+    </form>
+
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead>
+                    <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                        {% for columna in columnas %}<th class="px-4 py-3 text-left">{{ columna }}</th>{% endfor %}
+                        <th class="px-4 py-3 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for fila in filas %}
+                    <tr class="hover:bg-gray-50 {% if not fila.activo %}opacity-60{% endif %}">
+                        {% for valor in fila.valores %}
+                        <td class="px-4 py-3 text-sm {% if forloop.first %}font-medium text-kivo-oscuro{% else %}text-kivo-pizarra{% endif %}">{{ valor }}</td>
+                        {% endfor %}
+                        <td class="px-4 py-3 text-sm">
+                            {% if fila.activo %}
+                            <span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Activo</span>
+                            {% else %}
+                            <span class="px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600">Inactivo</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-center space-x-2">
+                            <a href="{% url url_editar fila.pk %}" class="text-yellow-600 hover:text-yellow-800" title="Editar"><i class="fas fa-edit"></i></a>
+                            <a href="{% url url_borrar fila.pk %}" class="text-red-500 hover:text-red-700" title="Eliminar"><i class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="{{ columnas|length|add:1 }}" class="px-6 py-12 text-center text-kivo-gris">Todavía no hay registros.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with total_label='registros' %}
+    </div>
+</div>
+{% endblock %}

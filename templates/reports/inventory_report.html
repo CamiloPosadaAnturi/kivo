@@ -1,53 +1,161 @@
 {% extends 'base.html' %}
 {% block title %}Reporte de Inventario{% endblock %}
 {% block content %}
-<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
-    <h1 class="text-2xl font-bold text-kivo-oscuro mb-6">Reporte de Inventario</h1>
-    
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-        <div class="bg-kivo-menta p-4 rounded-xl border border-kivo-azul-claro/50">
-            <p class="text-xs text-kivo-gris uppercase tracking-wider">Valor Total del Inventario</p>
-            <p class="text-2xl font-bold text-kivo-petroleo mt-1">${{ total_inventory_value|floatformat:2 }}</p>
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-kivo-oscuro">Reporte de inventario</h1>
+            <p class="text-kivo-gris mt-1">Qué hay en bodega, qué se acabó y qué lleva tiempo quieto.</p>
         </div>
-        <div class="bg-kivo-menta p-4 rounded-xl border border-kivo-azul-claro/50">
-            <p class="text-xs text-kivo-gris uppercase tracking-wider">Productos con Stock Bajo</p>
-            <p class="text-2xl font-bold text-red-600 mt-1">{{ low_stock_count }}</p>
+        <a href="{% url 'inventory:product_export_csv' %}" class="px-4 py-2 border border-kivo-azul-claro text-kivo-pizarra rounded-xl text-sm font-medium hover:bg-gray-50">
+            <i class="fas fa-file-csv mr-2"></i>Exportar productos
+        </a>
+    </div>
+
+    <!-- Indicadores -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-kivo-petroleo rounded-2xl p-5 text-white shadow-sm">
+            <p class="text-xs uppercase tracking-wider opacity-80">Valor del inventario</p>
+            <p class="text-2xl font-bold mt-1">${{ total_inventory_value|floatformat:0 }}</p>
+            <p class="text-xs opacity-70 mt-1">{{ shown_count }} producto{{ shown_count|pluralize }} en el filtro</p>
+        </div>
+        <a href="?estado=agotado" class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm card-hover block">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Agotados</p>
+            <p class="text-2xl font-bold {% if out_of_stock_count %}text-red-600{% else %}text-kivo-oscuro{% endif %} mt-1">{{ out_of_stock_count }}</p>
+            <p class="text-xs text-kivo-gris mt-1">Sin existencias</p>
+        </a>
+        <a href="?estado=bajo" class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm card-hover block">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Bajo mínimo</p>
+            <p class="text-2xl font-bold {% if low_stock_count %}text-orange-600{% else %}text-kivo-oscuro{% endif %} mt-1">{{ low_stock_count }}</p>
+            <p class="text-xs text-kivo-gris mt-1">Hay poquitos, toca reponer</p>
+        </a>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Unidades en bodega</p>
+            <p class="text-2xl font-bold text-kivo-oscuro mt-1">{{ total_units|floatformat:"-2" }}</p>
         </div>
     </div>
-    
-    <div class="overflow-x-auto">
-        <table class="min-w-full divide-y divide-gray-100">
-            <thead>
-                <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
-                    <th class="px-4 py-3 text-left">SKU</th>
-                    <th class="px-4 py-3 text-left">Producto</th>
-                    <th class="px-4 py-3 text-right">Stock Actual</th>
-                    <th class="px-4 py-3 text-right">Stock Mínimo</th>
-                    <th class="px-4 py-3 text-right">Costo Unitario</th>
-                    <th class="px-4 py-3 text-right">Valor Total</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100">
-                {% for product in products %}
-                <tr class="hover:bg-gray-50">
-                    <td class="px-4 py-3 text-sm font-medium text-kivo-oscuro font-mono">{{ product.sku }}</td>
-                    <td class="px-4 py-3 text-sm text-kivo-oscuro">{{ product.name }}</td>
-                    <td class="px-4 py-3 text-sm text-right {% if product.current_stock <= product.min_stock %}text-red-600 font-bold{% else %}text-kivo-oscuro{% endif %}">
-                        {{ product.current_stock|floatformat:"-3" }}
-                    </td>
-                    <td class="px-4 py-3 text-sm text-right text-kivo-gris">{{ product.min_stock|floatformat:"-3" }}</td>
-                    <td class="px-4 py-3 text-sm text-right text-kivo-oscuro">${{ product.purchase_price }}</td>
-                    <td class="px-4 py-3 text-sm text-right font-bold text-kivo-oscuro">${{ product.total_value|floatformat:2 }}</td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="px-6 py-12 text-center text-kivo-gris">
-                        No hay datos para el reporte.
-                    </td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <!-- Filtros -->
+    <form method="get" class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="lg:col-span-1">
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Buscar</label>
+                <input type="search" name="q" value="{{ filtros.q }}" placeholder="Nombre o código"
+                       class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Estado del stock</label>
+                <select name="estado" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    {% for valor, etiqueta in estados %}
+                    <option value="{{ valor }}" {% if filtros.estado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Categoría</label>
+                <select name="categoria" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    <option value="">Todas las categorías</option>
+                    {% for c in categories %}
+                    <option value="{{ c.pk }}" {% if filtros.categoria == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Comprado en</label>
+                <select name="comprado" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    {% for valor, etiqueta in periodos %}
+                    <option value="{{ valor }}" {% if filtros.comprado == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Sin movimiento desde hace</label>
+                <select name="quieto" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    {% for valor, etiqueta in periodos %}
+                    <option value="{{ valor }}" {% if filtros.quieto == valor %}selected{% endif %}>{% if valor %}{{ etiqueta }}{% else %}No filtrar{% endif %}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Ordenar por</label>
+                <select name="orden" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    {% for valor, etiqueta in ordenes %}
+                    <option value="{{ valor }}" {% if filtros.orden == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 mt-4 pt-4 border-t border-gray-100">
+            <label class="flex items-center gap-2 text-sm text-kivo-pizarra cursor-pointer">
+                <input type="checkbox" name="activos" value="todos" {% if filtros.activos == 'todos' %}checked{% endif %}
+                       class="w-4 h-4 rounded border-gray-300 text-kivo-petroleo">
+                Incluir productos inactivos
+            </label>
+            <div class="flex gap-2">
+                {% if has_filters %}
+                <a href="{% url 'reports:inventory_report' %}" class="px-4 py-2 border border-kivo-azul-claro text-kivo-pizarra rounded-xl text-sm font-medium hover:bg-gray-50">Limpiar</a>
+                {% endif %}
+                <button type="submit" class="btn-kivo text-white px-6 py-2 rounded-xl text-sm font-medium">
+                    <i class="fas fa-filter mr-1"></i> Filtrar
+                </button>
+            </div>
+        </div>
+    </form>
+
+    <!-- Tabla -->
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead>
+                    <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                        <th class="px-4 py-3 text-left">SKU</th>
+                        <th class="px-4 py-3 text-left">Producto</th>
+                        <th class="px-4 py-3 text-left">Categoría</th>
+                        <th class="px-4 py-3 text-right">Stock</th>
+                        <th class="px-4 py-3 text-right">Mínimo</th>
+                        <th class="px-4 py-3 text-right">Costo</th>
+                        <th class="px-4 py-3 text-right">Valor</th>
+                        <th class="px-4 py-3 text-left">Última compra</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for product in products %}
+                    <tr class="hover:bg-gray-50 {% if product.current_stock <= 0 %}bg-red-50/40{% endif %}">
+                        <td class="px-4 py-3 text-sm font-mono text-kivo-gris">{{ product.sku }}</td>
+                        <td class="px-4 py-3 text-sm font-medium text-kivo-oscuro">
+                            <a href="{% url 'inventory:product_detail' product.pk %}" class="hover:text-kivo-petroleo">{{ product.name }}</a>
+                            {% if not product.is_active %}<span class="ml-1 text-xs text-kivo-gris">(inactivo)</span>{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-kivo-gris">{{ product.category.name|default:"—" }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-semibold {% if product.current_stock <= 0 %}text-red-600{% elif product.current_stock <= product.min_stock %}text-orange-600{% else %}text-kivo-oscuro{% endif %}">
+                            {{ product.current_stock|floatformat:"-3" }}
+                            {% if product.current_stock <= 0 %}
+                            <span class="block text-[10px] font-normal uppercase">agotado</span>
+                            {% elif product.current_stock <= product.min_stock %}
+                            <span class="block text-[10px] font-normal uppercase">bajo</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-right text-kivo-gris">{{ product.min_stock|floatformat:"-3" }}</td>
+                        <td class="px-4 py-3 text-sm text-right text-kivo-oscuro">${{ product.purchase_price|floatformat:0 }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-bold text-kivo-oscuro">${{ product.total_value|floatformat:0 }}</td>
+                        <td class="px-4 py-3 text-sm text-kivo-gris">
+                            {% if product.ultima_entrada %}{{ product.ultima_entrada|date:"d/m/Y" }}{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-6 py-12 text-center text-kivo-gris">
+                            Ningún producto cumple con estos filtros.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include 'includes/pagination.html' with total_label='productos' %}
     </div>
 </div>
 {% endblock %}

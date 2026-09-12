@@ -2,6 +2,11 @@ from decimal import Decimal
 
 from django.contrib.auth import login
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import UserPassesTestMixin
+from django.core.exceptions import PermissionDenied
+from django.db.models import Q
+from django.urls import reverse_lazy
+from django.views.generic import FormView, ListView
 from django.db.models import DecimalField, ExpressionWrapper, F, Sum
 from django.shortcuts import render, redirect
 from django.contrib import messages
@@ -9,6 +14,9 @@ from django.contrib import messages
 from incomes.models import Income
 from expenses.models import Expense
 from bank_accounts.models import BankAccount
+from .forms import CompanyOnboardingForm
+from .models import Business, Company, User
+from .services import provision_company
 from inventory.models import Product
 from purchases.models import PurchaseOrder
 
@@ -89,3 +97,74 @@ def dashboard(request):
         'open_orders': open_orders,
     }
     return render(request, 'users/dashboard.html', context)
+
+
+# ---------------------------------------------------------------------------
+# Alta de empresas — solo para el superusuario de Kivo
+# ---------------------------------------------------------------------------
+
+class SuperuserRequiredMixin(UserPassesTestMixin):
+    """
+    Reservado al dueño de Kivo. No basta con esconder el botón: sin esta
+    comprobación, cualquiera que escriba la URL entraría.
+    """
+
+    def test_func(self):
+        return self.request.user.is_authenticated and self.request.user.is_superuser
+
+    def handle_no_permission(self):
+        if not self.request.user.is_authenticated:
+            return super().handle_no_permission()
+        raise PermissionDenied('Esta sección es solo para el administrador de Kivo.')
+
+
+class CompanyListView(SuperuserRequiredMixin, ListView):
+    model = Company
+    template_name = 'users/company_list.html'
+    context_object_name = 'companies'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = Company.objects.prefetch_related('businesses', 'users').order_by('name')
+        texto = (self.request.GET.get('q') or '').strip()
+        if texto:
+            qs = qs.filter(Q(name__icontains=texto) | Q(tax_id__icontains=texto))
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['total_empresas'] = Company.objects.count()
+        ctx['total_negocios'] = Business.objects.count()
+        ctx['total_usuarios'] = User.objects.filter(is_superuser=False).count()
+        ctx['filtros'] = {'q': self.request.GET.get('q', '')}
+        return ctx
+
+
+class CompanyCreateView(SuperuserRequiredMixin, FormView):
+    """Asistente de alta: empresa, negocio y usuario dueño en un solo paso."""
+    form_class = CompanyOnboardingForm
+    template_name = 'users/company_form.html'
+    success_url = reverse_lazy('company_list')
+
+    def form_valid(self, form):
+        datos = form.cleaned_data
+        company, business, owner = provision_company(
+            company_name=datos['company_name'],
+            tax_id=datos.get('tax_id'),
+            contact_email=datos.get('contact_email'),
+            contact_phone=datos.get('contact_phone'),
+            business_name=datos['business_name'],
+            sector=datos['sector'],
+            direccion=datos.get('direccion'),
+            telefono=datos.get('telefono'),
+            username=datos['username'],
+            password=datos['password'],
+            first_name=datos['first_name'],
+            last_name=datos.get('last_name', ''),
+            email=datos['email'],
+        )
+        messages.success(
+            self.request,
+            f'Empresa "{company.name}" creada con el negocio "{business.name}". '
+            f'El cliente entra con el usuario {owner.username}.')
+        return super().form_valid(form)

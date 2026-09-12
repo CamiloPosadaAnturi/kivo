@@ -4,7 +4,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kivo - {% block title %}Dashboard{% endblock %}</title>
+    <title>{% block head_title %}Kivo - {% block title %}Dashboard{% endblock %}{% endblock %}</title>
+
+    {# Las pantallas internas van detrás del login: no deben indexarse. #}
+    <meta name="robots" content="{% block robots %}noindex, nofollow{% endblock %}">
+    <meta name="description" content="{% block meta_description %}{{ SITE_DESCRIPTION }}{% endblock %}">
+    <link rel="canonical" href="{% block canonical %}{{ CANONICAL_URL }}{% endblock %}">
+    <meta name="theme-color" content="#004671">
+    <meta name="color-scheme" content="light">
+    <link rel="icon" href="{% static 'img/logo-kivo.jfif' %}">
+    <link rel="apple-touch-icon" href="{% static 'img/logo-kivo.jfif' %}">
+    {% block head_extra %}{% endblock %}
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -23,8 +33,11 @@
         }
     </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+        
         * { font-family: 'Inter', sans-serif; }
         
         .nav-link {
@@ -120,7 +133,7 @@
     </style>
     {% block extra_css %}{% endblock %}
 </head>
-<body class="bg-kivo-menta text-kivo-oscuro antialiased min-h-screen">
+<body class="bg-kivo-menta text-kivo-oscuro antialiased min-h-screen overflow-x-hidden">
 
     <!-- Navbar -->
     <nav class="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-kivo-azul-claro/50 shadow-sm">

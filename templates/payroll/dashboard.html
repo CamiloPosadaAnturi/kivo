@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Nómina{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-kivo-oscuro">Nómina</h1>
+            <p class="text-kivo-gris mt-1">Tu equipo, sus pagos y lo que cuesta cada periodo.</p>
+        </div>
+        <div class="grid grid-cols-2 gap-2 w-full sm:flex sm:w-auto sm:gap-3">
+            <a href="{% url 'payroll:employee_create' %}" class="justify-center px-3 sm:px-5 py-3 border border-kivo-azul-claro text-kivo-pizarra font-semibold rounded-xl flex items-center gap-2 hover:bg-gray-50 text-xs sm:text-base">
+                <i class="fas fa-user-plus hidden sm:inline"></i> Nuevo empleado
+            </a>
+            <a href="{% url 'payroll:period_create' %}" class="justify-center px-3 sm:px-5 py-3 btn-kivo text-white font-semibold rounded-xl flex items-center gap-2 text-xs sm:text-base">
+                <i class="fas fa-calendar-plus hidden sm:inline"></i> Nuevo periodo
+            </a>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div>{% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">{{ message }}</div>
+    {% endfor %}</div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <a href="{% url 'payroll:employee_list' %}" class="bg-kivo-petroleo rounded-2xl p-5 text-white shadow-sm card-hover block">
+            <p class="text-xs uppercase tracking-wider opacity-80">Empleados activos</p>
+            <p class="text-3xl font-bold mt-1">{{ empleados_activos|default:"0" }}</p>
+            <p class="text-xs opacity-70 mt-1">{{ total_empleados|default:"0" }} en total</p>
+        </a>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Masa salarial</p>
+            <p class="text-2xl font-bold text-kivo-oscuro mt-1">${{ masa_salarial|default:"0"|floatformat:0 }}</p>
+            <p class="text-xs text-kivo-gris mt-1">Suma de salarios base</p>
+        </div>
+        <a href="{% url 'payroll:period_list' %}" class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm card-hover block">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Periodos sin pagar</p>
+            <p class="text-2xl font-bold {% if periodos_pendientes %}text-orange-600{% else %}text-kivo-oscuro{% endif %} mt-1">{{ periodos_pendientes|default:"0" }}</p>
+        </a>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Neto del último periodo</p>
+            <p class="text-2xl font-bold text-kivo-oscuro mt-1">${{ totales_periodo.neto|default:"0"|floatformat:0 }}</p>
+            {% if ultimo_periodo %}<p class="text-xs text-kivo-gris mt-1 truncate">{{ ultimo_periodo.name }}</p>{% endif %}
+        </div>
+    </div>
+
+    {% if ultimo_periodo %}
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+        <div class="flex justify-between items-center mb-4">
+            <h2 class="font-bold text-kivo-oscuro">Último periodo liquidado</h2>
+            <a href="{{ ultimo_periodo.get_absolute_url }}" class="text-sm text-kivo-petroleo hover:underline">Ver detalle</a>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-xs text-kivo-gris uppercase">Total devengado</p>
+                <p class="text-lg font-bold text-kivo-oscuro mt-1">${{ totales_periodo.devengado|default:"0"|floatformat:0 }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-xs text-kivo-gris uppercase">Deducciones</p>
+                <p class="text-lg font-bold text-red-500 mt-1">${{ totales_periodo.deducciones|default:"0"|floatformat:0 }}</p>
+            </div>
+            <div class="bg-kivo-azul-claro/40 rounded-xl p-4">
+                <p class="text-xs text-kivo-gris uppercase">Neto a pagar</p>
+                <p class="text-lg font-bold text-kivo-petroleo mt-1">${{ totales_periodo.neto|default:"0"|floatformat:0 }}</p>
+            </div>
+            <div class="bg-gray-50 rounded-xl p-4">
+                <p class="text-xs text-kivo-gris uppercase">Prestaciones</p>
+                <p class="text-lg font-bold text-kivo-oscuro mt-1">${{ totales_periodo.prestaciones|default:"0"|floatformat:0 }}</p>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+            <div class="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+                <h2 class="font-bold text-kivo-oscuro">Últimos periodos</h2>
+                <a href="{% url 'payroll:period_list' %}" class="text-sm text-kivo-petroleo hover:underline">Ver todos</a>
+            </div>
+            <table class="min-w-full divide-y divide-gray-100">
+                <tbody class="divide-y divide-gray-100">
+                    {% for p in ultimos_periodos %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-5 py-3">
+                            <a href="{{ p.get_absolute_url }}" class="text-sm font-medium text-kivo-oscuro hover:text-kivo-petroleo">{{ p.name }}</a>
+                            <p class="text-xs text-kivo-gris">{{ p.start_date|date:"d/m/Y" }} — {{ p.end_date|date:"d/m/Y" }}</p>
+                        </td>
+                        <td class="px-5 py-3 text-right">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium
+                                {% if p.status == 'paid' or p.status == 'closed' %}bg-green-100 text-green-700
+                                {% elif p.status == 'settled' %}bg-kivo-azul-claro text-kivo-petroleo
+                                {% else %}bg-gray-100 text-gray-600{% endif %}">{{ p.get_status_display }}</span>
+                            <p class="text-xs text-kivo-gris mt-1">{{ p.liquidaciones }} liquidacion{{ p.liquidaciones|pluralize:"es" }}</p>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td class="px-5 py-8 text-center text-kivo-gris text-sm">Aún no has creado periodos.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+            <h2 class="font-bold text-kivo-oscuro mb-4">Equipo por departamento</h2>
+            {% for fila in por_departamento %}
+            <div class="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
+                <span class="text-sm text-kivo-pizarra">{{ fila.department__name|default:"Sin departamento" }}</span>
+                <div class="text-right">
+                    <span class="text-sm font-semibold text-kivo-oscuro">${{ fila.total|floatformat:0 }}</span>
+                    <p class="text-xs text-kivo-gris">{{ fila.n }} persona{{ fila.n|pluralize }}</p>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-sm text-kivo-gris">Registra empleados para ver este resumen.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

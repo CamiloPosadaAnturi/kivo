@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.db import models
@@ -87,17 +89,23 @@ class PurchaseOrder(models.Model):
     def get_absolute_url(self):
         return reverse('purchases:purchaseorder_detail', kwargs={'pk': self.pk})
 
+    # Los valores se pasan por Decimal() porque un objeto recién creado en
+    # memoria trae los defaults como int, y Decimal * float lanza TypeError.
     @property
     def subtotal(self):
-        return sum(line.line_total for line in self.lines.all())
+        return sum((line.line_total for line in self.lines.all()), Decimal('0'))
+
+    @property
+    def base_gravable(self):
+        return self.subtotal - Decimal(self.discount or 0)
 
     @property
     def tax_amount(self):
-        return (self.subtotal - self.discount) * (self.tax_rate / 100)
+        return self.base_gravable * (Decimal(self.tax_rate or 0) / Decimal('100'))
 
     @property
     def total(self):
-        return (self.subtotal - self.discount) + self.tax_amount
+        return self.base_gravable + self.tax_amount
 
     def can_send(self):
         return self.status == 'draft'
@@ -166,11 +174,11 @@ class PurchaseOrderLine(models.Model):
 
     @property
     def line_total(self):
-        return self.quantity * self.unit_price
+        return Decimal(self.quantity or 0) * Decimal(self.unit_price or 0)
 
     @property
     def remaining(self):
-        return max(0, self.quantity - self.received_qty)
+        return max(Decimal('0'), Decimal(self.quantity or 0) - Decimal(self.received_qty or 0))
 
     def __str__(self):
         return f'{self.purchase_order.number} - {self.product.name}'
@@ -207,11 +215,12 @@ class PurchaseReceipt(models.Model):
 
     @property
     def total_qty(self):
-        return sum(line.quantity for line in self.lines.all())
+        return sum((Decimal(line.quantity) for line in self.lines.all()), Decimal('0'))
 
     @property
     def total_amount(self):
-        return sum(line.quantity * line.unit_cost for line in self.lines.all())
+        return sum((Decimal(line.quantity) * Decimal(line.unit_cost)
+                    for line in self.lines.all()), Decimal('0'))
 
     def build_number(self):
         year = timezone.now().year

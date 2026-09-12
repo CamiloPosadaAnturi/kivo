@@ -20,8 +20,9 @@ class TenantScopedMixin:
         return qs.none()
 
     def form_valid(self, form):
-        tenant = self.get_tenant()
-        setattr(form.instance, self.tenant_field, tenant)
+        # Los DeleteView usan un Form vacío, sin instance: ahí no hay nada que marcar.
+        if hasattr(form, 'instance'):
+            setattr(form.instance, self.tenant_field, self.get_tenant())
         return super().form_valid(form)
 
 class RoleRequiredMixin:

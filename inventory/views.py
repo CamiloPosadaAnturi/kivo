@@ -5,6 +5,7 @@ from django.contrib.auth.mixins import LoginRequiredMixin
 from django.http import HttpResponse
 from django.urls import reverse_lazy
 from django.core.exceptions import ValidationError
+from django.db.models import F, Q
 from django.views.generic import (
     ListView, CreateView, UpdateView, DetailView, DeleteView, FormView, TemplateView,
 )
@@ -37,6 +38,7 @@ class WarehouseListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = Warehouse
     template_name = 'inventory/warehouse_list.html'
     context_object_name = 'warehouses'
+    paginate_by = 20
 
 
 class WarehouseCreateView(LoginRequiredMixin, TenantScopedMixin, CreateView):
@@ -107,6 +109,7 @@ class UnitOfMeasureListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = UnitOfMeasure
     template_name = 'inventory/uom_list.html'
     context_object_name = 'units'
+    paginate_by = 20
 
 
 class UnitOfMeasureCreateView(LoginRequiredMixin, TenantScopedMixin, CreateView):
@@ -177,6 +180,7 @@ class ProductCategoryListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = ProductCategory
     template_name = 'inventory/category_list.html'
     context_object_name = 'categories'
+    paginate_by = 20
 
 
 class ProductCategoryCreateView(LoginRequiredMixin, TenantScopedMixin, CreateView):
@@ -247,6 +251,28 @@ class ProductListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = Product
     template_name = 'inventory/product_list.html'
     context_object_name = 'products'
+    paginate_by = 25
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('category', 'uom')
+        texto = (self.request.GET.get('q') or '').strip()
+        if texto:
+            qs = qs.filter(Q(name__icontains=texto) | Q(sku__icontains=texto))
+        if self.request.GET.get('estado') == 'alerta':
+            qs = qs.filter(current_stock__lte=F('min_stock'))
+        if self.request.GET.get('activos') != 'todos':
+            qs = qs.filter(is_active=True)
+        return qs
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['filtros'] = {
+            'q': self.request.GET.get('q', ''),
+            'estado': self.request.GET.get('estado', ''),
+            'activos': self.request.GET.get('activos', ''),
+        }
+        ctx['has_filters'] = any(ctx['filtros'].values())
+        return ctx
 
 
 class ProductCreateView(LoginRequiredMixin, TenantScopedMixin, CreateView):
@@ -330,6 +356,35 @@ class InventoryMovementListView(LoginRequiredMixin, TenantScopedMixin, ListView)
     model = InventoryMovement
     template_name = 'inventory/movement_list.html'
     context_object_name = 'movements'
+    paginate_by = 30
+
+    def get_queryset(self):
+        qs = super().get_queryset().select_related('product', 'warehouse', 'created_by')
+
+        tipo = self.request.GET.get('tipo')
+        if tipo in dict(InventoryMovement.TYPE_CHOICES):
+            qs = qs.filter(movement_type=tipo)
+
+        texto = (self.request.GET.get('q') or '').strip()
+        if texto:
+            qs = qs.filter(
+                Q(product__name__icontains=texto) |
+                Q(product__sku__icontains=texto) |
+                Q(reference__icontains=texto))
+
+        # created_at es auto_now_add: muchos movimientos comparten el segundo,
+        # así que sin desempatar por id la paginación puede repetir filas.
+        return qs.order_by('-created_at', '-id')
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx['tipos'] = InventoryMovement.TYPE_CHOICES
+        ctx['filtros'] = {
+            'tipo': self.request.GET.get('tipo', ''),
+            'q': self.request.GET.get('q', ''),
+        }
+        ctx['has_filters'] = any(ctx['filtros'].values())
+        return ctx
 
 
 class InventoryAdjustmentCreateView(LoginRequiredMixin, FormView):

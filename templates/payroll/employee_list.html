@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Empleados{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-kivo-oscuro">Empleados</h1>
+            <p class="text-kivo-gris mt-1">Masa salarial del filtro: <strong>${{ masa_salarial|floatformat:0 }}</strong></p>
+        </div>
+        <a href="{% url 'payroll:employee_create' %}" class="px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl flex items-center gap-2 hover:opacity-90 transition-all">
+            <i class="fas fa-user-plus"></i> Nuevo empleado
+        </a>
+    </div>
+
+    {% if messages %}
+    <div>{% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800{% else %}bg-blue-50 text-blue-800{% endif %}">{{ message }}</div>
+    {% endfor %}</div>
+    {% endif %}
+
+    <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <input type="search" name="q" value="{{ filtros.q }}" placeholder="Nombre, documento o correo"
+               class="lg:col-span-2 w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+        <select name="departamento" class="px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+            <option value="">Todos los departamentos</option>
+            {% for d in departamentos %}<option value="{{ d.pk }}" {% if filtros.departamento == d.pk|stringformat:"s" %}selected{% endif %}>{{ d.name }}</option>{% endfor %}
+        </select>
+        <select name="estado" class="px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+            <option value="">Solo activos</option>
+            {% for valor, etiqueta in estados %}<option value="{{ valor }}" {% if filtros.estado == valor %}selected{% endif %}>{{ etiqueta }}</option>{% endfor %}
+        </select>
+        <div class="flex gap-2">
+            <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium flex-1">Filtrar</button>
+            {% if has_filters %}<a href="{% url 'payroll:employee_list' %}" class="px-4 py-2 border border-kivo-azul-claro text-kivo-pizarra rounded-xl text-sm hover:bg-gray-50">Limpiar</a>{% endif %}
+        </div>
+    </form>
+
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead>
+                    <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                        <th class="px-4 py-3 text-left">Empleado</th>
+                        <th class="px-4 py-3 text-left">Documento</th>
+                        <th class="px-4 py-3 text-left">Cargo</th>
+                        <th class="px-4 py-3 text-left">Contrato</th>
+                        <th class="px-4 py-3 text-right">Salario base</th>
+                        <th class="px-4 py-3 text-center">Estado</th>
+                        <th class="px-4 py-3 text-center">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for e in empleados %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <a href="{{ e.get_absolute_url }}" class="text-sm font-medium text-kivo-oscuro hover:text-kivo-petroleo">{{ e.full_name }}</a>
+                            {% if e.department %}<p class="text-xs text-kivo-gris">{{ e.department.name }}</p>{% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-kivo-gris">{{ e.document_type }} {{ e.document }}</td>
+                        <td class="px-4 py-3 text-sm text-kivo-pizarra">{{ e.position.name }}</td>
+                        <td class="px-4 py-3 text-sm text-kivo-gris">{{ e.contract_type.name }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-semibold text-kivo-oscuro">${{ e.base_salary|floatformat:0 }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <span class="px-2 py-1 rounded-full text-xs font-medium {% if e.is_active %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-600{% endif %}">{{ e.get_status_display }}</span>
+                        </td>
+                        <td class="px-4 py-3 text-center space-x-2">
+                            <a href="{{ e.get_absolute_url }}" class="text-kivo-petroleo hover:text-kivo-oscuro" title="Ver"><i class="fas fa-eye"></i></a>
+                            <a href="{% url 'payroll:employee_update' e.pk %}" class="text-yellow-600 hover:text-yellow-800" title="Editar"><i class="fas fa-edit"></i></a>
+                            <a href="{% url 'payroll:employee_delete' e.pk %}" class="text-red-500 hover:text-red-700" title="Eliminar"><i class="fas fa-trash"></i></a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7" class="px-6 py-12 text-center text-kivo-gris">No hay empleados con estos filtros.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% include 'includes/pagination.html' with total_label='empleados' %}
+    </div>
+</div>
+{% endblock %}

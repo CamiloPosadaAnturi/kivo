@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% block title %}{{ titulo }}{% endblock %}
+{% block content %}
+<div class="max-w-4xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <a href="{% url 'payroll:employee_list' %}" class="inline-flex items-center gap-2 text-kivo-gris hover:text-kivo-petroleo transition-colors text-sm mb-4">
+        <i class="fas fa-arrow-left"></i> Volver a empleados
+    </a>
+    <h1 class="text-2xl font-bold text-kivo-oscuro mb-1">{{ titulo }}</h1>
+    <p class="text-sm text-kivo-gris mb-6">Los campos con <span class="text-red-400">*</span> son obligatorios.</p>
+
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+        <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
+        <section>
+            <h2 class="text-xs font-semibold text-kivo-gris uppercase tracking-wider mb-3">Datos personales</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% include 'includes/field.html' with field=form.first_name %}
+                {% include 'includes/field.html' with field=form.last_name %}
+                {% include 'includes/field.html' with field=form.document_type %}
+                {% include 'includes/field.html' with field=form.document %}
+                {% include 'includes/field.html' with field=form.birth_date %}
+                {% include 'includes/field.html' with field=form.phone %}
+                {% include 'includes/field.html' with field=form.email %}
+                {% include 'includes/field.html' with field=form.address %}
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-xs font-semibold text-kivo-gris uppercase tracking-wider mb-3">Vinculación</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% include 'includes/field.html' with field=form.hire_date %}
+                {% include 'includes/field.html' with field=form.termination_date %}
+                {% include 'includes/field.html' with field=form.position %}
+                {% include 'includes/field.html' with field=form.department %}
+                {% include 'includes/field.html' with field=form.contract_type %}
+                {% include 'includes/field.html' with field=form.base_salary %}
+                {% include 'includes/field.html' with field=form.status %}
+                {% include 'includes/field.html' with field=form.user %}
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-xs font-semibold text-kivo-gris uppercase tracking-wider mb-3">Pago</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% include 'includes/field.html' with field=form.bank_name %}
+                {% include 'includes/field.html' with field=form.account_type %}
+                {% include 'includes/field.html' with field=form.account_number %}
+            </div>
+            <div class="mt-4">{% include 'includes/field.html' with field=form.notes %}</div>
+        </section>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-kivo-azul-claro/50">
+            <a href="{% url 'payroll:employee_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="btn-kivo text-white px-6 py-2 rounded-xl text-sm font-medium">{{ submit_text }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% block title %}{{ periodo.name }}{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto space-y-6">
+    <div>
+        <a href="{% url 'payroll:period_list' %}" class="inline-flex items-center gap-2 text-kivo-gris hover:text-kivo-petroleo transition-colors text-sm mb-4">
+            <i class="fas fa-arrow-left"></i> Volver a periodos
+        </a>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <h1 class="text-3xl font-bold text-kivo-oscuro">{{ periodo.name }}</h1>
+                <p class="text-kivo-gris">
+                    {{ periodo.get_frequency_display }} · {{ periodo.start_date|date:"d/m/Y" }} — {{ periodo.end_date|date:"d/m/Y" }}
+                    · se paga el {{ periodo.payment_date|date:"d/m/Y" }}
+                </p>
+            </div>
+            <span class="px-3 py-1.5 rounded-full text-sm font-semibold
+                {% if periodo.status == 'paid' or periodo.status == 'closed' %}bg-green-100 text-green-700
+                {% elif periodo.status == 'settled' %}bg-kivo-azul-claro text-kivo-petroleo
+                {% else %}bg-gray-100 text-gray-600{% endif %}">{{ periodo.get_status_display }}</span>
+        </div>
+    </div>
+
+    {% if messages %}
+    <div>{% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800{% else %}bg-blue-50 text-blue-800{% endif %}">{{ message }}</div>
+    {% endfor %}</div>
+    {% endif %}
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Total devengado</p>
+            <p class="text-xl font-bold text-kivo-oscuro mt-1">${{ totales.devengado|default:"0"|floatformat:0 }}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-red-200/60 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Deducciones</p>
+            <p class="text-xl font-bold text-red-500 mt-1">${{ totales.deducciones|default:"0"|floatformat:0 }}</p>
+        </div>
+        <div class="bg-kivo-petroleo rounded-2xl p-5 text-white shadow-sm">
+            <p class="text-xs uppercase tracking-wider opacity-80">Neto a pagar</p>
+            <p class="text-xl font-bold mt-1">${{ totales.neto|default:"0"|floatformat:0 }}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Prestaciones</p>
+            <p class="text-xl font-bold text-kivo-oscuro mt-1">${{ totales.prestaciones|default:"0"|floatformat:0 }}</p>
+            <p class="text-xs text-kivo-gris mt-1">{% if periodo.uses_social_benefits %}Costo de la empresa{% else %}No causa en este periodo{% endif %}</p>
+        </div>
+    </div>
+
+    <!-- Interruptor de prestaciones sociales -->
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+                <h2 class="font-bold text-kivo-oscuro">¿Usa prestaciones sociales?</h2>
+                <p class="text-sm text-kivo-gris mt-1">
+                    Prima, cesantías, intereses y vacaciones se calculan solas.
+                    No se le descuentan al empleado: son costo de la empresa.
+                </p>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                <span class="px-3 py-1.5 rounded-full text-sm font-semibold
+                    {% if periodo.uses_social_benefits %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-600{% endif %}">
+                    {% if periodo.uses_social_benefits %}Activadas{% else %}Desactivadas{% endif %}
+                </span>
+                {% if periodo.is_editable %}
+                <form method="post" action="{% url 'payroll:period_benefits' periodo.pk %}">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="px-5 py-2 rounded-xl text-sm font-medium border transition-all
+                            {% if periodo.uses_social_benefits %}border-gray-200 text-kivo-pizarra hover:bg-gray-50{% else %}btn-kivo text-white border-transparent{% endif %}">
+                        {% if periodo.uses_social_benefits %}Desactivar{% else %}Sí, activarlas{% endif %}
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Acciones del periodo -->
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+        <h2 class="font-bold text-kivo-oscuro mb-4">¿Qué sigue?</h2>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+            <div class="border border-kivo-azul-claro/50 rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-kivo-oscuro mb-2">1. Liquidar</h3>
+                {% if periodo.can_settle %}
+                <form method="post" action="{% url 'payroll:period_settle' periodo.pk %}" class="space-y-3">
+                    {% csrf_token %}
+                    {% include 'includes/field.html' with field=settle_form.worked_days %}
+                    <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium w-full">
+                        {% if periodo.status == 'settled' %}Volver a liquidar{% else %}Liquidar empleados{% endif %}
+                    </button>
+                </form>
+                {% else %}
+                <p class="text-sm text-kivo-gris">Ya no se puede liquidar: el periodo está {{ periodo.get_status_display|lower }}.</p>
+                {% endif %}
+            </div>
+
+            <div class="border border-kivo-azul-claro/50 rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-kivo-oscuro mb-2">2. Pagar</h3>
+                {% if periodo.can_pay %}
+                <form method="post" action="{% url 'payroll:period_pay' periodo.pk %}" class="space-y-3">
+                    {% csrf_token %}
+                    {% include 'includes/field.html' with field=pay_form.account %}
+                    <p class="text-xs text-kivo-gris">Se registra un egreso por el neto y baja el saldo de esa cuenta.</p>
+                    <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium w-full">Registrar pago</button>
+                </form>
+                {% elif periodo.payment_expense %}
+                <p class="text-sm text-kivo-pizarra">
+                    Pagado el {{ periodo.paid_at|date:"d/m/Y" }} desde
+                    <strong>{{ periodo.payment_expense.bank_account.name }}</strong>.
+                </p>
+                {% else %}
+                <p class="text-sm text-kivo-gris">Primero hay que liquidar el periodo.</p>
+                {% endif %}
+            </div>
+
+            <div class="border border-kivo-azul-claro/50 rounded-xl p-4">
+                <h3 class="text-sm font-semibold text-kivo-oscuro mb-2">3. Cerrar</h3>
+                {% if periodo.can_close %}
+                <form method="post" action="{% url 'payroll:period_close' periodo.pk %}">
+                    {% csrf_token %}
+                    <p class="text-xs text-kivo-gris mb-3">Al cerrar, el periodo queda congelado.</p>
+                    <button type="submit" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium w-full hover:bg-gray-50">Cerrar periodo</button>
+                </form>
+                {% elif periodo.status == 'closed' %}
+                <p class="text-sm text-kivo-pizarra">Cerrado el {{ periodo.closed_at|date:"d/m/Y" }}.</p>
+                {% else %}
+                <p class="text-sm text-kivo-gris">Se cierra después de pagarlo.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="font-bold text-kivo-oscuro">Liquidaciones</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead>
+                    <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                        <th class="px-4 py-3 text-left">Empleado</th>
+                        <th class="px-4 py-3 text-right">Días</th>
+                        <th class="px-4 py-3 text-right">Salario</th>
+                        <th class="px-4 py-3 text-right">Devengado</th>
+                        <th class="px-4 py-3 text-right">Deducciones</th>
+                        <th class="px-4 py-3 text-right">Neto</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for l in liquidaciones %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm"><a href="{{ l.get_absolute_url }}" class="font-medium text-kivo-oscuro hover:text-kivo-petroleo">{{ l.employee.full_name }}</a></td>
+                        <td class="px-4 py-3 text-sm text-right text-kivo-gris">{{ l.worked_days|floatformat:"-2" }}</td>
+                        <td class="px-4 py-3 text-sm text-right text-kivo-pizarra">${{ l.accrued_salary|floatformat:0 }}</td>
+                        <td class="px-4 py-3 text-sm text-right text-kivo-oscuro">${{ l.total_earnings|floatformat:0 }}</td>
+                        <td class="px-4 py-3 text-sm text-right text-red-500">${{ l.total_deductions|floatformat:0 }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-bold text-kivo-oscuro">${{ l.net_pay|floatformat:0 }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="px-6 py-12 text-center text-kivo-gris">Este periodo aún no se ha liquidado.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -9,6 +9,23 @@
         </a>
     </div>
 
+    <form method="get" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
+        <input type="search" name="q" value="{{ filtros.q }}" placeholder="Producto, código o referencia"
+               class="sm:col-span-1 w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+        <select name="tipo" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+            <option value="">Todos los tipos</option>
+            {% for valor, etiqueta in tipos %}
+            <option value="{{ valor }}" {% if filtros.tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+            {% endfor %}
+        </select>
+        <div class="flex gap-2">
+            <button type="submit" class="btn-kivo text-white px-4 py-2 rounded-xl text-sm font-medium flex-1">Filtrar</button>
+            {% if has_filters %}
+            <a href="{% url 'inventory:movement_list' %}" class="px-4 py-2 border border-kivo-azul-claro text-kivo-pizarra rounded-xl text-sm font-medium hover:bg-gray-50">Limpiar</a>
+            {% endif %}
+        </div>
+    </form>
+
     {% if messages %}
     <div class="mb-4">
         {% for message in messages %}
@@ -57,5 +74,7 @@
             </tbody>
         </table>
     </div>
+
+    {% include 'includes/pagination.html' with total_label='movimientos' %}
 </div>
 {% endblock %}

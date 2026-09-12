@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% block title %}Empresas{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-bold text-kivo-oscuro">Empresas en Kivo</h1>
+            <p class="text-kivo-gris mt-1">Los clientes que has dado de alta en la plataforma.</p>
+        </div>
+        <a href="{% url 'company_create' %}" class="px-6 py-3 bg-kivo-petroleo text-white font-semibold rounded-xl flex items-center gap-2 hover:opacity-90 transition-all">
+            <i class="fas fa-plus"></i> Nueva empresa
+        </a>
+    </div>
+
+    {% if messages %}
+    <div>
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="bg-kivo-petroleo rounded-2xl p-5 text-white shadow-sm">
+            <p class="text-xs uppercase tracking-wider opacity-80">Empresas</p>
+            <p class="text-3xl font-bold mt-1">{{ total_empresas }}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Negocios</p>
+            <p class="text-3xl font-bold text-kivo-oscuro mt-1">{{ total_negocios }}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Usuarios</p>
+            <p class="text-3xl font-bold text-kivo-oscuro mt-1">{{ total_usuarios }}</p>
+        </div>
+    </div>
+
+    <form method="get" class="flex gap-3">
+        <input type="search" name="q" value="{{ filtros.q }}" placeholder="Nombre o NIT de la empresa"
+               class="flex-1 px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+        <button type="submit" class="btn-kivo text-white px-6 py-2 rounded-xl text-sm font-medium">Buscar</button>
+    </form>
+
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead>
+                    <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                        <th class="px-4 py-3 text-left">Empresa</th>
+                        <th class="px-4 py-3 text-left">NIT</th>
+                        <th class="px-4 py-3 text-left">Negocios</th>
+                        <th class="px-4 py-3 text-left">Usuarios</th>
+                        <th class="px-4 py-3 text-left">Creada</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for company in companies %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3">
+                            <p class="text-sm font-medium text-kivo-oscuro">{{ company.name }}</p>
+                            {% if company.contact_email %}
+                            <p class="text-xs text-kivo-gris">{{ company.contact_email }}</p>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-kivo-gris">{{ company.tax_id|default:"—" }}</td>
+                        <td class="px-4 py-3 text-sm text-kivo-pizarra">
+                            {% for negocio in company.businesses.all %}
+                            <span class="inline-block bg-kivo-azul-claro/40 text-kivo-petroleo px-2 py-0.5 rounded text-xs mr-1 mb-1">{{ negocio.name }}</span>
+                            {% empty %}—{% endfor %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-kivo-gris">
+                            {% for u in company.users.all %}{{ u.username }}{% if not forloop.last %}, {% endif %}{% empty %}—{% endfor %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-kivo-gris">{{ company.created_at|date:"d/m/Y" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="px-6 py-12 text-center text-kivo-gris">
+                            Todavía no has dado de alta ninguna empresa.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include 'includes/pagination.html' with total_label='empresas' %}
+    </div>
+</div>
+{% endblock %}

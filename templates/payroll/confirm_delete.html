@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Eliminar{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto bg-white rounded-2xl shadow-sm border border-red-200 p-6 text-center">
+    <div class="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <i class="fas fa-exclamation-triangle text-red-500 text-2xl"></i>
+    </div>
+    <h1 class="text-xl font-bold text-kivo-oscuro mb-2">¿Eliminar este registro?</h1>
+    <p class="text-kivo-gris mb-6">{{ object }}</p>
+    <p class="text-sm text-kivo-gris mb-6">
+        Si tiene movimientos asociados no se borra: queda inactivo y su historial se conserva.
+    </p>
+    <form method="post">
+        {% csrf_token %}
+        <div class="flex justify-center gap-3">
+            <a href="{% url volver %}" class="border border-kivo-azul-claro text-kivo-pizarra px-6 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="bg-red-500 hover:bg-red-600 text-white px-6 py-2 rounded-xl text-sm font-medium">Eliminar</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

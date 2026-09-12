@@ -1,10 +1,15 @@
 {% load static %}
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es-CO">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Kivo - Iniciar Sesión</title>
+    <title>Iniciar sesión | Kivo</title>
+    <meta name="description" content="Entra a Kivo para gestionar los ingresos, egresos, caja, inventario y compras de tu negocio.">
+    <meta name="robots" content="noindex, follow">
+    <link rel="canonical" href="{{ SITE_URL }}/login/">
+    <meta name="theme-color" content="#004671">
+    <link rel="icon" href="{% static 'img/logo-kivo.jfif' %}">
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -276,7 +281,7 @@
         .particle:nth-child(5) { width: 8px; height: 8px; top: 10%; left: 70%; animation-delay: 4s; }
     </style>
 </head>
-<body class="login-bg h-screen flex items-center justify-center p-4 overflow-hidden relative">
+<body class="login-bg min-h-screen flex items-center justify-center p-4 overflow-x-hidden relative">
     <!-- Overlay -->
     <div class="login-overlay absolute inset-0"></div>
     

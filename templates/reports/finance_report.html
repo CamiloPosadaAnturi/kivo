@@ -1,0 +1,220 @@
+{% extends 'base.html' %}
+{% block title %}Reporte de Ingresos y Egresos{% endblock %}
+{% block content %}
+<div class="max-w-6xl mx-auto space-y-6">
+
+    <div>
+        <h1 class="text-3xl font-bold text-kivo-oscuro">Reporte de ingresos y egresos</h1>
+        <p class="text-kivo-gris mt-1">Cuánto entró, cuánto salió y en qué se fue.</p>
+    </div>
+
+    <!-- Indicadores -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-5 border border-green-200/60 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Ingresos</p>
+            <p class="text-2xl font-bold text-green-600 mt-1">${{ total_ingresos|floatformat:0 }}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-red-200/60 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Egresos</p>
+            <p class="text-2xl font-bold text-red-500 mt-1">${{ total_egresos|floatformat:0 }}</p>
+        </div>
+        <div class="bg-kivo-petroleo rounded-2xl p-5 text-white shadow-sm">
+            <p class="text-xs uppercase tracking-wider opacity-80">Resultado</p>
+            <p class="text-2xl font-bold mt-1">${{ resultado|floatformat:0 }}</p>
+            <p class="text-xs opacity-70 mt-1">{% if resultado >= 0 %}Quedó a favor{% else %}Se gastó de más{% endif %}</p>
+        </div>
+        <div class="bg-white rounded-2xl p-5 border border-kivo-azul-claro/50 shadow-sm">
+            <p class="text-xs uppercase tracking-wider text-kivo-gris">Movimientos</p>
+            <p class="text-2xl font-bold text-kivo-oscuro mt-1">{{ conteo }}</p>
+        </div>
+    </div>
+
+    <!-- Filtros -->
+    <form method="get" class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="lg:col-span-2">
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Buscar</label>
+                <input type="search" name="q" value="{{ filtros.q }}" placeholder="Descripción o categoría"
+                       class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Tipo</label>
+                <select name="tipo" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    {% for valor, etiqueta in tipos %}
+                    <option value="{{ valor }}" {% if filtros.tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Categoría</label>
+                <select name="categoria" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    <option value="">Todas</option>
+                    {% for c in categories %}
+                    <option value="{{ c.pk }}" {% if filtros.categoria == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }} ({{ c.get_type_display }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Cuenta</label>
+                <select name="cuenta" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    <option value="">Todas</option>
+                    {% for c in cuentas %}
+                    <option value="{{ c.pk }}" {% if filtros.cuenta == c.pk|stringformat:"s" %}selected{% endif %}>{{ c.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Método de pago</label>
+                <select name="metodo" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    <option value="">Todos</option>
+                    {% for valor, etiqueta in metodos %}
+                    <option value="{{ valor }}" {% if filtros.metodo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Periodo</label>
+                <select name="periodo" class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+                    {% for valor, etiqueta in periodos %}
+                    <option value="{{ valor }}" {% if filtros.periodo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Desde</label>
+                <input type="date" name="start_date" value="{{ filtros.start_date }}"
+                       class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-kivo-pizarra mb-1">Hasta</label>
+                <input type="date" name="end_date" value="{{ filtros.end_date }}"
+                       class="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm text-kivo-oscuro focus:outline-none focus:border-kivo-petroleo">
+            </div>
+        </div>
+        <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
+            {% if has_filters %}
+            <a href="{% url 'reports:finance_report' %}" class="px-4 py-2 border border-kivo-azul-claro text-kivo-pizarra rounded-xl text-sm font-medium hover:bg-gray-50">Limpiar</a>
+            {% endif %}
+            <button type="submit" class="btn-kivo text-white px-6 py-2 rounded-xl text-sm font-medium">
+                <i class="fas fa-filter mr-1"></i> Filtrar
+            </button>
+        </div>
+    </form>
+
+    <!-- Desglose por categoría -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+            <h2 class="font-bold text-kivo-oscuro mb-4"><i class="fas fa-arrow-up text-green-500 mr-2"></i>De dónde entra</h2>
+            {% for fila in por_categoria_ingreso %}
+            <div class="mb-3">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-kivo-pizarra truncate">{{ fila.category__name }}</span>
+                    <span class="font-semibold text-kivo-oscuro shrink-0 ml-3">${{ fila.total|floatformat:0 }}</span>
+                </div>
+                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-green-500 rounded-full" style="width: {{ fila.pct|floatformat:0 }}%"></div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-sm text-kivo-gris">Sin ingresos en el filtro.</p>
+            {% endfor %}
+        </div>
+
+        <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm p-5">
+            <h2 class="font-bold text-kivo-oscuro mb-4"><i class="fas fa-arrow-down text-red-500 mr-2"></i>En qué se va</h2>
+            {% for fila in por_categoria_egreso %}
+            <div class="mb-3">
+                <div class="flex justify-between text-sm mb-1">
+                    <span class="text-kivo-pizarra truncate">{{ fila.category__name }}</span>
+                    <span class="font-semibold text-kivo-oscuro shrink-0 ml-3">${{ fila.total|floatformat:0 }}</span>
+                </div>
+                <div class="h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div class="h-full bg-red-500 rounded-full" style="width: {{ fila.pct|floatformat:0 }}%"></div>
+                </div>
+            </div>
+            {% empty %}
+            <p class="text-sm text-kivo-gris">Sin egresos en el filtro.</p>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Mes a mes -->
+    {% if por_mes %}
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="font-bold text-kivo-oscuro">Mes a mes</h2>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead>
+                    <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                        <th class="px-5 py-3 text-left">Mes</th>
+                        <th class="px-5 py-3 text-right">Ingresos</th>
+                        <th class="px-5 py-3 text-right">Egresos</th>
+                        <th class="px-5 py-3 text-right">Resultado</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for fila in por_mes %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-5 py-3 text-sm font-medium text-kivo-oscuro capitalize">{{ fila.mes|date:"F Y" }}</td>
+                        <td class="px-5 py-3 text-sm text-right text-green-600">${{ fila.ingresos|floatformat:0 }}</td>
+                        <td class="px-5 py-3 text-sm text-right text-red-500">${{ fila.egresos|floatformat:0 }}</td>
+                        <td class="px-5 py-3 text-sm text-right font-bold {% if fila.resultado >= 0 %}text-kivo-oscuro{% else %}text-red-600{% endif %}">${{ fila.resultado|floatformat:0 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Detalle -->
+    <div class="bg-white rounded-2xl border border-kivo-azul-claro/50 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100">
+                <thead>
+                    <tr class="text-xs text-kivo-gris uppercase bg-gray-50">
+                        <th class="px-4 py-3 text-left">Fecha</th>
+                        <th class="px-4 py-3 text-left">Tipo</th>
+                        <th class="px-4 py-3 text-left">Categoría</th>
+                        <th class="px-4 py-3 text-left">Descripción</th>
+                        <th class="px-4 py-3 text-left">Cuenta</th>
+                        <th class="px-4 py-3 text-left">Método</th>
+                        <th class="px-4 py-3 text-right">Monto</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for m in movimientos %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 text-sm text-kivo-gris">{{ m.date|date:"d/m/Y" }}</td>
+                        <td class="px-4 py-3">
+                            {% if m.es_ingreso %}
+                            <span class="px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">Ingreso</span>
+                            {% else %}
+                            <span class="px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">Egreso</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-sm text-kivo-oscuro">{{ m.category.name }}</td>
+                        <td class="px-4 py-3 text-sm text-kivo-pizarra">{{ m.description|default:"—" }}</td>
+                        <td class="px-4 py-3 text-sm text-kivo-gris">{{ m.bank_account.name|default:"—" }}</td>
+                        <td class="px-4 py-3 text-sm text-kivo-gris">{{ m.get_payment_method_display }}</td>
+                        <td class="px-4 py-3 text-sm text-right font-bold {% if m.es_ingreso %}text-green-600{% else %}text-red-500{% endif %}">
+                            {% if m.es_ingreso %}+{% else %}−{% endif %}${{ m.amount|floatformat:0 }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-kivo-gris">
+                            No hay movimientos con estos filtros.
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% include 'includes/pagination.html' with total_label='movimientos' %}
+    </div>
+</div>
+{% endblock %}

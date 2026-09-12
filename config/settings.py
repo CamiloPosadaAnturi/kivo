@@ -33,6 +33,15 @@ DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
+# Dominio público del sitio. Se usa en las URLs canónicas, el sitemap y la
+# vista previa al compartir en redes. Cambia SITE_URL en el .env cuando tengas
+# el dominio definitivo y todo el SEO apunta solo.
+SITE_URL = os.getenv('SITE_URL', 'https://kivo.com.co')
+SITE_NAME = 'Kivo'
+SITE_DESCRIPTION = (
+    'Software de gestión para mipymes en Colombia: controla ingresos, egresos, '
+    'caja, inventario y compras desde un solo lugar.')
+
 
 # Application definition
 
@@ -50,6 +59,7 @@ INSTALLED_APPS = [
     'expenses',
     'inventory',
     'purchases',
+    'payroll',
     'reports',
 ]
 AUTH_USER_MODEL = 'users.User'
@@ -86,6 +96,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'core.context_processors.site',
             ],
         },
     },

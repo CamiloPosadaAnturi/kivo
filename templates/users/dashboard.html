@@ -9,7 +9,7 @@
     <div class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <h1 class="text-3xl font-bold text-kivo-oscuro">Bienvenido, {{ user.username }}</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold text-kivo-oscuro break-words">Bienvenido, {{ user.username }}</h1>
                 <p class="text-kivo-gris mt-1">
                     {% if user.business %}
                     {{ user.business.name }}
@@ -18,18 +18,18 @@
                     {% endif %}
                 </p>
             </div>
-            <div class="flex gap-3">
-                <a href="{% url 'incomes:income_list' %}" 
-                   class="px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl flex items-center gap-2 transition-all">
-                    <i class="fas fa-arrow-up"></i> Ingresos
+            <div class="grid grid-cols-3 gap-2 w-full sm:flex sm:w-auto sm:gap-3">
+                <a href="{% url 'incomes:income_list' %}"
+                   class="justify-center px-2 sm:px-6 py-3 bg-green-500 hover:bg-green-600 text-white font-semibold rounded-xl flex items-center gap-2 transition-all text-xs sm:text-base">
+                    <i class="fas fa-arrow-up hidden sm:inline"></i> Ingresos
                 </a>
-                <a href="{% url 'expenses:expense_list' %}" 
-                   class="px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl flex items-center gap-2 transition-all">
-                    <i class="fas fa-arrow-down"></i> Egresos
+                <a href="{% url 'expenses:expense_list' %}"
+                   class="justify-center px-2 sm:px-6 py-3 bg-red-500 hover:bg-red-600 text-white font-semibold rounded-xl flex items-center gap-2 transition-all text-xs sm:text-base">
+                    <i class="fas fa-arrow-down hidden sm:inline"></i> Egresos
                 </a>
                 <a href="{% url 'purchases:purchaseorder_create' %}"
-                   class="px-6 py-3 btn-kivo text-white font-semibold rounded-xl flex items-center gap-2 transition-all">
-                    <i class="fas fa-file-invoice"></i> Nueva orden
+                   class="justify-center px-2 sm:px-6 py-3 btn-kivo text-white font-semibold rounded-xl flex items-center gap-2 transition-all text-xs sm:text-base text-center leading-tight">
+                    <i class="fas fa-file-invoice hidden sm:inline"></i> Nueva orden
                 </a>
             </div>
         </div>
@@ -128,8 +128,24 @@
                 </div>
             </a>
 
+            {% if user.role == 'admin' %}
+            <!-- Nómina -->
+            <a href="{% url 'payroll:dashboard' %}"
+               class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center group-hover:bg-blue-500 group-hover:text-white transition-all text-blue-600">
+                        <i class="fas fa-users text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-kivo-oscuro">Nómina</h3>
+                        <p class="text-sm text-kivo-gris">Empleados y liquidación</p>
+                    </div>
+                </div>
+            </a>
+            {% endif %}
+
             <!-- Nueva cuenta -->
-            <a href="{% url 'bank_accounts:bankaccount_create' %}" 
+            <a href="{% url 'bank_accounts:bankaccount_create' %}"
                class="bg-white rounded-2xl p-6 border border-kivo-azul-claro/50 shadow-sm card-hover group block">
                 <div class="flex items-center gap-4">
                     <div class="w-14 h-14 bg-green-500/10 rounded-xl flex items-center justify-center group-hover:bg-green-500 group-hover:text-white transition-all text-green-500">

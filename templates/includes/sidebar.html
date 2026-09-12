@@ -105,6 +105,40 @@
                 </a>
             </div>
 
+            {% if user.role == 'admin' %}
+            <!-- Personal: la nómina solo la ve el administrador del negocio -->
+            <button type="button" class="sidebar-section-toggle w-full flex items-center justify-between px-3 mb-2 mt-6" data-target="section-personal">
+                <span class="text-xs font-semibold text-kivo-gris uppercase tracking-wider">Personal</span>
+                <i class="fas fa-chevron-down text-[10px] text-kivo-gris/60 transition-transform"></i>
+            </button>
+            <div id="section-personal" class="sidebar-section space-y-1">
+                <a href="{% url 'payroll:dashboard' %}"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-pizarra {% if request.resolver_match.namespace == 'payroll' %}active{% endif %}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {% if request.resolver_match.namespace == 'payroll' %}bg-kivo-petroleo text-white{% else %}bg-blue-100 text-blue-600{% endif %}">
+                        <i class="fas fa-users text-sm"></i>
+                    </div>
+                    Nómina
+                </a>
+            </div>
+            {% endif %}
+
+            {% if user.is_superuser %}
+            <!-- Administración de Kivo: solo el superusuario la ve -->
+            <button type="button" class="sidebar-section-toggle w-full flex items-center justify-between px-3 mb-2 mt-6" data-target="section-kivo">
+                <span class="text-xs font-semibold text-kivo-gris uppercase tracking-wider">Administración Kivo</span>
+                <i class="fas fa-chevron-down text-[10px] text-kivo-gris/60 transition-transform"></i>
+            </button>
+            <div id="section-kivo" class="sidebar-section space-y-1">
+                <a href="{% url 'company_list' %}"
+                   class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-kivo-pizarra {% if request.resolver_match.url_name == 'company_list' or request.resolver_match.url_name == 'company_create' %}active{% endif %}">
+                    <div class="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 {% if request.resolver_match.url_name == 'company_list' or request.resolver_match.url_name == 'company_create' %}bg-kivo-petroleo text-white{% else %}bg-kivo-azul-claro/50 text-kivo-petroleo{% endif %}">
+                        <i class="fas fa-building text-sm"></i>
+                    </div>
+                    Empresas
+                </a>
+            </div>
+            {% endif %}
+
             <!-- Proximamente -->
             <button type="button" class="sidebar-section-toggle w-full flex items-center justify-between px-3 mb-2 mt-6" data-target="section-proximamente">
                 <span class="text-xs font-semibold text-kivo-gris uppercase tracking-wider">Proximamente</span>

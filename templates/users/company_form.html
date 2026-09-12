@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% block title %}Nueva empresa{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-sm border border-kivo-azul-claro/50 p-6">
+    <a href="{% url 'company_list' %}" class="inline-flex items-center gap-2 text-kivo-gris hover:text-kivo-petroleo transition-colors text-sm mb-4">
+        <i class="fas fa-arrow-left"></i> Volver a empresas
+    </a>
+
+    <h1 class="text-2xl font-bold text-kivo-oscuro mb-1">Dar de alta una empresa</h1>
+    <p class="text-sm text-kivo-gris mb-6">
+        Responde estas preguntas y Kivo crea la empresa, su primer negocio y el usuario
+        con el que entrará el cliente. Los datos de cada empresa quedan separados de los demás.
+    </p>
+
+    {% if messages %}
+    <div class="mb-4">
+        {% for message in messages %}
+        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">
+            {{ message }}
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <form method="post" class="space-y-8">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+        <div class="p-4 rounded-xl bg-red-100 text-red-800 text-sm">
+            {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+        </div>
+        {% endif %}
+
+        <section>
+            <h2 class="text-xs font-semibold text-kivo-gris uppercase tracking-wider mb-3">1. La empresa</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% include 'includes/field.html' with field=form.company_name %}
+                {% include 'includes/field.html' with field=form.tax_id %}
+                {% include 'includes/field.html' with field=form.contact_email %}
+                {% include 'includes/field.html' with field=form.contact_phone %}
+            </div>
+        </section>
+
+        <section>
+            <h2 class="text-xs font-semibold text-kivo-gris uppercase tracking-wider mb-3">2. Su primer negocio</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% include 'includes/field.html' with field=form.business_name %}
+                {% include 'includes/field.html' with field=form.sector %}
+                {% include 'includes/field.html' with field=form.direccion %}
+                {% include 'includes/field.html' with field=form.telefono %}
+            </div>
+            <p class="text-xs text-kivo-gris mt-2">
+                Una empresa puede tener varios negocios más adelante; este es el primero.
+            </p>
+        </section>
+
+        <section>
+            <h2 class="text-xs font-semibold text-kivo-gris uppercase tracking-wider mb-3">3. Quién va a entrar</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {% include 'includes/field.html' with field=form.first_name %}
+                {% include 'includes/field.html' with field=form.last_name %}
+                {% include 'includes/field.html' with field=form.username %}
+                {% include 'includes/field.html' with field=form.email %}
+                {% include 'includes/field.html' with field=form.password %}
+                {% include 'includes/field.html' with field=form.password_confirm %}
+            </div>
+            <p class="text-xs text-kivo-gris mt-2">
+                Este usuario queda como administrador de su negocio y podrá crear los suyos.
+            </p>
+        </section>
+
+        <div class="flex justify-end gap-3 pt-4 border-t border-kivo-azul-claro/50">
+            <a href="{% url 'company_list' %}" class="border border-kivo-azul-claro text-kivo-pizarra px-4 py-2 rounded-xl text-sm font-medium hover:bg-gray-50">Cancelar</a>
+            <button type="submit" class="btn-kivo text-white px-6 py-2 rounded-xl text-sm font-medium flex items-center gap-2">
+                <i class="fas fa-building"></i> Crear empresa
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
