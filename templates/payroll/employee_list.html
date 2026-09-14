@@ -12,11 +12,6 @@
         </a>
     </div>
 
-    {% if messages %}
-    <div>{% for message in messages %}
-        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-800{% else %}bg-blue-50 text-blue-800{% endif %}">{{ message }}</div>
-    {% endfor %}</div>
-    {% endif %}
 
     <form method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
         <input type="search" name="q" value="{{ filtros.q }}" placeholder="Nombre, documento o correo"

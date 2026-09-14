@@ -1,0 +1,111 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es-CO">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Página no encontrada | Kivo</title>
+    <meta name="robots" content="noindex, nofollow">
+    <meta name="theme-color" content="#004671">
+    <link rel="icon" href="{% static 'img/logo-kivo.jfif' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'kivo-menta': '#EAFFFF',
+                        'kivo-azul-claro': '#C2E8FF',
+                        'kivo-gris': '#7298AF',
+                        'kivo-pizarra': '#365C73',
+                        'kivo-oscuro': '#042A41',
+                        'kivo-petroleo': '#004671',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        * { font-family: 'Inter', sans-serif; }
+
+        html, body {
+            min-height: 100vh;
+        }
+
+        .error-bg {
+            background: linear-gradient(135deg, #042A41 0%, #004671 50%, #365C73 100%);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-up {
+            animation: fadeInUp 0.8s ease-out forwards;
+            opacity: 0;
+        }
+        .delay-100 { animation-delay: .1s; }
+        .delay-200 { animation-delay: .2s; }
+        .delay-300 { animation-delay: .3s; }
+        .delay-400 { animation-delay: .4s; }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-14px); }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.97);
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body class="error-bg min-h-screen flex items-center justify-center px-4 py-10 overflow-x-hidden">
+
+    <div class="w-full max-w-lg text-center animate-fade-in-up">
+        <div class="flex justify-center mb-6 animate-float">
+            <div class="w-20 h-20 bg-kivo-petroleo rounded-2xl flex items-center justify-center shadow-xl">
+                <img src="{% static 'img/logo-kivo.jfif' %}" alt="Kivo" class="w-12 h-12 object-contain rounded-lg">
+            </div>
+        </div>
+
+        <div class="glass-card rounded-3xl shadow-2xl p-8 sm:p-10 animate-fade-in-up delay-100">
+            <p class="text-7xl sm:text-8xl font-extrabold text-kivo-petroleo leading-none mb-3">404</p>
+            <h1 class="text-xl sm:text-2xl font-bold text-kivo-oscuro mb-2">
+                Esta página se perdió en el camino
+            </h1>
+            <p class="text-kivo-gris text-sm sm:text-base mb-8">
+                No encontramos lo que buscas. Puede que el enlace esté mal escrito
+                o que la página se haya movido.
+            </p>
+
+            <div class="flex flex-col sm:flex-row gap-3 animate-fade-in-up delay-200">
+                {% if request.user.is_authenticated %}
+                <a href="{% url 'dashboard' %}"
+                   class="flex-1 text-center bg-kivo-petroleo text-white px-6 py-3 rounded-xl font-medium hover:bg-kivo-oscuro transition-all shadow-md">
+                    <i class="fas fa-gauge mr-2"></i> Ir al dashboard
+                </a>
+                {% else %}
+                <a href="{% url 'login' %}"
+                   class="flex-1 text-center bg-kivo-petroleo text-white px-6 py-3 rounded-xl font-medium hover:bg-kivo-oscuro transition-all shadow-md">
+                    <i class="fas fa-right-to-bracket mr-2"></i> Iniciar sesión
+                </a>
+                {% endif %}
+                <a href="{% url 'index' %}"
+                   class="flex-1 text-center border border-kivo-petroleo/30 text-kivo-petroleo px-6 py-3 rounded-xl font-medium hover:bg-kivo-menta transition-all">
+                    <i class="fas fa-house mr-2"></i> Volver al inicio
+                </a>
+            </div>
+        </div>
+
+        <p class="text-center text-xs text-white/70 mt-6 animate-fade-in-up delay-300">
+            &copy; {% now "Y" %} Kivo. Si crees que esto es un error, avísanos.
+        </p>
+    </div>
+
+</body>
+</html>

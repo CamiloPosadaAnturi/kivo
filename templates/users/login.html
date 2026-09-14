@@ -351,9 +351,9 @@
                 {% if messages %}
                 <div class="mb-6 space-y-2 animate-fade-in-up delay-500">
                     {% for message in messages %}
-                    <div class="p-4 rounded-xl text-sm {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
+                    <div class="p-4 rounded-xl text-sm {% if message.tags == 'error' %}bg-red-50 text-red-600 border border-red-200{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-700 border border-yellow-200{% else %}bg-green-50 text-green-600 border border-green-200{% endif %}">
                         <div class="flex items-center gap-2">
-                            <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% else %}fa-check-circle{% endif %}"></i>
+                            <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-triangle-exclamation{% else %}fa-check-circle{% endif %}"></i>
                             {{ message }}
                         </div>
                     </div>
@@ -420,28 +420,6 @@
                         </span>
                     </button>
                 </form>
-
-                <!-- Divider -->
-                <div class="relative my-8 animate-fade-in-up delay-800">
-                    <div class="absolute inset-0 flex items-center">
-                        <div class="w-full border-t border-gray-200"></div>
-                    </div>
-                    <div class="relative flex justify-center text-sm">
-                        <span class="px-4 bg-white text-kivo-gris">o continúa con</span>
-                    </div>
-                </div>
-
-                <!-- Social login -->
-                <div class="grid grid-cols-2 gap-4 animate-fade-in-up delay-800">
-                    <button type="button" class="flex items-center justify-center gap-2 py-3 px-4 border-2 border-gray-200 rounded-xl hover:border-kivo-petroleo hover:bg-kivo-menta transition-all group">
-                        <i class="fab fa-google text-lg text-gray-500 group-hover:text-kivo-petroleo"></i>
-                        <span class="text-sm font-medium text-kivo-gris group-hover:text-kivo-petroleo">Google</span>
-                    </button>
-                    <button type="button" class="flex items-center justify-center gap-2 py-3 px-4 border-2 border-gray-200 rounded-xl hover:border-kivo-petroleo hover:bg-kivo-menta transition-all group">
-                        <i class="fab fa-microsoft text-lg text-gray-500 group-hover:text-kivo-petroleo"></i>
-                        <span class="text-sm font-medium text-kivo-gris group-hover:text-kivo-petroleo">Microsoft</span>
-                    </button>
-                </div>
 
                 <!-- Register link -->
                 <p class="text-center mt-8 text-sm text-kivo-gris animate-fade-in-up delay-800">

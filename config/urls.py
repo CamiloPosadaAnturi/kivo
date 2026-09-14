@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+from django.views.generic import TemplateView
 
 urlpatterns = [
     path('robots.txt', robots_txt, name='robots_txt'),
@@ -23,3 +24,7 @@ urlpatterns = [
 
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    # Solo para revisar el diseño del 404 en local, sin depender de DEBUG=False.
+    urlpatterns += [
+        path('preview-404/', TemplateView.as_view(template_name='404.html'), name='preview_404'),
+    ]

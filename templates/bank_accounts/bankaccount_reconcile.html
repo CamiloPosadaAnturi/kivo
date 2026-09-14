@@ -7,15 +7,6 @@
         {{ bank_account.name }} · {{ bank_account.get_kind_display }}
     </p>
 
-    {% if messages %}
-    <div class="mb-4">
-        {% for message in messages %}
-        <div class="p-4 rounded-xl mb-2 text-sm {% if message.tags == 'success' %}bg-green-100 text-green-800{% elif message.tags == 'error' %}bg-red-100 text-red-800{% else %}bg-blue-50 text-blue-800{% endif %}">
-            {{ message }}
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
 
     <div class="bg-gray-50 rounded-xl px-4 py-4 mb-6 flex items-center justify-between">
         <div>

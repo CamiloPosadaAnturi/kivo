@@ -111,10 +111,13 @@
                        class="flex-1 text-center bg-kivo-petroleo text-white px-6 py-3 rounded-xl font-medium hover:bg-kivo-oscuro transition-all shadow-md">
                         <i class="fab fa-whatsapp mr-2"></i> Escribirle a Kivo
                     </a>
-                    <a href="{% url 'logout' %}"
-                       class="flex-1 text-center border border-kivo-petroleo/30 text-kivo-petroleo px-6 py-3 rounded-xl font-medium hover:bg-kivo-menta transition-all">
-                        Cerrar sesión
-                    </a>
+                    <form method="post" action="{% url 'logout' %}" class="flex-1">
+                        {% csrf_token %}
+                        <button type="submit"
+                           class="w-full text-center border border-kivo-petroleo/30 text-kivo-petroleo px-6 py-3 rounded-xl font-medium hover:bg-kivo-menta transition-all cursor-pointer bg-transparent">
+                            Cerrar sesión
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>

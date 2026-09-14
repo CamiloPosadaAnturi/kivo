@@ -154,6 +154,12 @@
 
                 <!-- Right side -->
                 <div class="flex items-center gap-4">
+                    {% if user.is_superuser %}
+                        <a href="{% url 'admin:index' %}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-kivo-petroleo text-white text-sm font-medium hover:bg-kivo-oscuro transition-colors" title="Panel de administración de Django">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Admin</span>
+                        </a>
+                    {% endif %}
                     <div class="hidden md:flex items-center gap-3 text-sm text-kivo-gris">
                         <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border border-kivo-azul-claro/50 bg-white">
                             {% if user.business and user.business.logo %}
@@ -166,9 +172,12 @@
                         </div>
                         <span class="font-medium text-kivo-oscuro">{{ user.username }}</span>
                     </div>
-                    <a href="{% url 'logout' %}" class="text-kivo-gris hover:text-red-500 transition-colors text-sm" title="Cerrar sesión">
-                        <i class="fas fa-sign-out-alt"></i>
-                    </a>
+                    <form method="post" action="{% url 'logout' %}" class="flex items-center">
+                        {% csrf_token %}
+                        <button type="submit" class="text-kivo-gris hover:text-red-500 transition-colors text-sm bg-transparent border-0 p-0 cursor-pointer" title="Cerrar sesión">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </form>
                 </div>
             </div>
         </div>
@@ -183,6 +192,17 @@
     <!-- Main content -->
     <main class="pt-16 min-h-screen main-content">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+            {% if messages %}
+            <div class="mb-6 space-y-2">
+                {% for message in messages %}
+                <div class="p-4 rounded-xl text-sm flex items-center gap-2 border {% if message.tags == 'error' %}bg-red-50 text-red-600 border-red-200{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-700 border-yellow-200{% else %}bg-green-50 text-green-600 border-green-200{% endif %}">
+                    <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-triangle-exclamation{% else %}fa-check-circle{% endif %}"></i>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
 
             {% if request.subscription.warns %}
             <div class="mb-6 rounded-2xl p-5 border {% if request.subscription.status == 'late' %}bg-red-50 border-red-200{% else %}bg-yellow-50 border-yellow-200{% endif %}">
