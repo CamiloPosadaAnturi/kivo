@@ -22,17 +22,17 @@ from .models import (
 from .services import apply_stock_count, apply_stock_movement
 
 
-# ---------------------------------------------------------------------------
+
 # Module home
-# ---------------------------------------------------------------------------
+
 
 class InventoryHomeView(LoginRequiredMixin, TemplateView):
     template_name = 'inventory/inventario_home.html'
 
 
-# ---------------------------------------------------------------------------
+
 # Warehouse
-# ---------------------------------------------------------------------------
+
 
 class WarehouseListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = Warehouse
@@ -101,9 +101,9 @@ class WarehouseDeleteView(LoginRequiredMixin, TenantScopedMixin, DeleteView):
         return super().form_valid(form)
 
 
-# ---------------------------------------------------------------------------
+
 # Unit of Measure
-# ---------------------------------------------------------------------------
+
 
 class UnitOfMeasureListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = UnitOfMeasure
@@ -172,9 +172,9 @@ class UnitOfMeasureDeleteView(LoginRequiredMixin, TenantScopedMixin, DeleteView)
         return super().form_valid(form)
 
 
-# ---------------------------------------------------------------------------
+
 # Product Category
-# ---------------------------------------------------------------------------
+
 
 class ProductCategoryListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = ProductCategory
@@ -243,9 +243,9 @@ class ProductCategoryDeleteView(LoginRequiredMixin, TenantScopedMixin, DeleteVie
         return super().form_valid(form)
 
 
-# ---------------------------------------------------------------------------
+
 # Product
-# ---------------------------------------------------------------------------
+
 
 class ProductListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = Product
@@ -348,9 +348,9 @@ class ProductDeleteView(LoginRequiredMixin, TenantScopedMixin, DeleteView):
         return super().form_valid(form)
 
 
-# ---------------------------------------------------------------------------
+
 # Inventory Movement
-# ---------------------------------------------------------------------------
+
 
 class InventoryMovementListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = InventoryMovement
@@ -454,9 +454,9 @@ class InventoryAdjustmentCreateView(LoginRequiredMixin, FormView):
         return super().form_valid(form)
 
 
-# ---------------------------------------------------------------------------
+
 # Products CSV Export
-# ---------------------------------------------------------------------------
+
 
 class ProductsExportCSVView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = Product

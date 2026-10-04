@@ -241,9 +241,7 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-# ---------------------------------------------------------------------------
 # Producción
-# ---------------------------------------------------------------------------
 # Solo aplica cuando DEBUG está apagado, para no estorbar en local (las
 # cookies seguras y el redirect a https romperían el runserver en http).
 

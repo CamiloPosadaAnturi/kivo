@@ -42,6 +42,24 @@ def demo_login(request):
         return redirect('index')
 
 @login_required
+def ayuda(request):
+    """
+    Centro de ayuda: cómo se hace cada cosa en Kivo.
+
+    Se abre en una pestaña aparte para poder seguir los pasos con la aplicación
+    al lado, sin perder lo que se estaba haciendo.
+    """
+    from core.help import secciones_para
+
+    secciones = secciones_para(request.user)
+    return render(request, 'users/ayuda.html', {
+        'secciones': secciones,
+        'total_preguntas': sum(len(s['preguntas']) for s in secciones),
+        'whatsapp_number': '+573206667421',
+    })
+
+
+@login_required
 def dashboard(request):
     user = request.user
     business = getattr(user, 'business', None)

@@ -154,12 +154,6 @@
 
                 <!-- Right side -->
                 <div class="flex items-center gap-4">
-                    {% if user.is_superuser %}
-                        <a href="{% url 'admin:index' %}" class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-kivo-petroleo text-white text-sm font-medium hover:bg-kivo-oscuro transition-colors" title="Panel de administración de Django">
-                            <i class="fas fa-shield-alt"></i>
-                            <span>Admin</span>
-                        </a>
-                    {% endif %}
                     <div class="hidden md:flex items-center gap-3 text-sm text-kivo-gris">
                         <div class="w-9 h-9 rounded-full overflow-hidden flex items-center justify-center border border-kivo-azul-claro/50 bg-white">
                             {% if user.business and user.business.logo %}
@@ -172,12 +166,19 @@
                         </div>
                         <span class="font-medium text-kivo-oscuro">{{ user.username }}</span>
                     </div>
-                    <form method="post" action="{% url 'logout' %}" class="flex items-center">
-                        {% csrf_token %}
-                        <button type="submit" class="text-kivo-gris hover:text-red-500 transition-colors text-sm bg-transparent border-0 p-0 cursor-pointer" title="Cerrar sesión">
-                            <i class="fas fa-sign-out-alt"></i>
-                        </button>
-                    </form>
+
+                    {# Se abre en otra pestaña para poder seguir los pasos con la app al lado. #}
+                    <a href="{% url 'ayuda' %}" target="_blank" rel="noopener"
+                       title="Centro de ayuda: cómo se hace cada cosa"
+                       class="flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium text-kivo-petroleo bg-kivo-menta border border-kivo-azul-claro hover:bg-kivo-azul-claro/40 transition-all">
+                        <i class="fas fa-circle-question"></i>
+                        {# El texto va siempre, también en el celular: un botón solo con icono no lo encuentra nadie si el icono no carga. #}
+                        <span>Ayuda</span>
+                    </a>
+
+                    <a href="{% url 'logout' %}" class="text-kivo-gris hover:text-red-500 transition-colors text-sm" title="Cerrar sesión">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </a>
                 </div>
             </div>
         </div>
@@ -192,17 +193,6 @@
     <!-- Main content -->
     <main class="pt-16 min-h-screen main-content">
         <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-
-            {% if messages %}
-            <div class="mb-6 space-y-2">
-                {% for message in messages %}
-                <div class="p-4 rounded-xl text-sm flex items-center gap-2 border {% if message.tags == 'error' %}bg-red-50 text-red-600 border-red-200{% elif message.tags == 'warning' %}bg-yellow-50 text-yellow-700 border-yellow-200{% else %}bg-green-50 text-green-600 border-green-200{% endif %}">
-                    <i class="fas {% if message.tags == 'error' %}fa-exclamation-circle{% elif message.tags == 'warning' %}fa-triangle-exclamation{% else %}fa-check-circle{% endif %}"></i>
-                    <span>{{ message }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
 
             {% if request.subscription.warns %}
             <div class="mb-6 rounded-2xl p-5 border {% if request.subscription.status == 'late' %}bg-red-50 border-red-200{% else %}bg-yellow-50 border-yellow-200{% endif %}">
@@ -250,13 +240,6 @@
             </div>
         </div>
     </footer>
-
-    <!-- Botón flotante de WhatsApp -->
-    <a href="https://wa.me/573206667421" target="_blank" rel="noopener"
-       class="fixed bottom-6 right-6 z-50 w-14 h-14 bg-[#25D366] rounded-full shadow-lg flex items-center justify-center text-white text-2xl hover:scale-110 hover:shadow-xl transition-all"
-       title="Escríbenos por WhatsApp">
-        <i class="fab fa-whatsapp"></i>
-    </a>
 
     <script>
         function toggleSidebar() {

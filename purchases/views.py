@@ -25,17 +25,13 @@ from .forms import (
 )
 
 
-# ---------------------------------------------------------------------------
 # Module home
-# ---------------------------------------------------------------------------
 
 class PurchasesHomeView(LoginRequiredMixin, TemplateView):
     template_name = 'purchases/compras_home.html'
 
 
-# ---------------------------------------------------------------------------
 # Suppliers
-# ---------------------------------------------------------------------------
 
 class SupplierListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = Supplier
@@ -123,9 +119,7 @@ class SupplierDeleteView(LoginRequiredMixin, TenantScopedMixin, RoleRequiredMixi
         return super().form_valid(form)
 
 
-# ---------------------------------------------------------------------------
 # Purchase orders
-# ---------------------------------------------------------------------------
 
 class PurchaseOrderListView(LoginRequiredMixin, TenantScopedMixin, ListView):
     model = PurchaseOrder
@@ -263,9 +257,7 @@ class PurchaseOrderDeleteView(LoginRequiredMixin, TenantScopedMixin, RoleRequire
         return super().form_valid(form)
 
 
-# ---------------------------------------------------------------------------
 # Purchase order state transitions
-# ---------------------------------------------------------------------------
 
 class PurchaseOrderActionView(LoginRequiredMixin, TenantScopedMixin, SingleObjectMixin, View):
     """
@@ -359,9 +351,7 @@ class PurchaseOrderCancelView(PurchaseOrderActionView):
     error_message = 'No se puede cancelar una orden ya recibida o cancelada.'
 
 
-# ---------------------------------------------------------------------------
 # Goods receipt
-# ---------------------------------------------------------------------------
 
 class PurchaseOrderScopedMixin:
     """Resuelve la orden de compra de la URL y la valida contra el negocio."""
@@ -498,9 +488,7 @@ class PurchaseReceiptCreateView(PurchaseOrderScopedMixin, LoginRequiredMixin, Cr
         return redirect(self.purchase_order.get_absolute_url())
 
 
-# ---------------------------------------------------------------------------
 # Supplier invoice
-# ---------------------------------------------------------------------------
 
 class PurchaseInvoiceCreateView(PurchaseOrderScopedMixin, LoginRequiredMixin, CreateView):
     model = PurchaseInvoice
@@ -529,9 +517,7 @@ class PurchaseInvoiceCreateView(PurchaseOrderScopedMixin, LoginRequiredMixin, Cr
         return self.purchase_order.get_absolute_url()
 
 
-# ---------------------------------------------------------------------------
 # Print / export
-# ---------------------------------------------------------------------------
 
 class PurchaseOrderPrintView(LoginRequiredMixin, TenantScopedMixin, DetailView):
     model = PurchaseOrder

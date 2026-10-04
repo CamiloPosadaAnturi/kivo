@@ -52,9 +52,9 @@ class PayrollAdminMixin(LoginRequiredMixin, TenantScopedMixin):
         return kwargs
 
 
-# ---------------------------------------------------------------------------
+
 # Dashboard
-# ---------------------------------------------------------------------------
+
 
 class PayrollDashboardView(LoginRequiredMixin, TemplateView):
     template_name = 'payroll/dashboard.html'
@@ -97,9 +97,9 @@ class PayrollDashboardView(LoginRequiredMixin, TemplateView):
         return ctx
 
 
-# ---------------------------------------------------------------------------
+
 # Catálogos (departamentos, cargos, tipos de contrato, conceptos)
-# ---------------------------------------------------------------------------
+
 
 class CatalogListView(PayrollAdminMixin, ListView):
     template_name = 'payroll/catalog_list.html'
@@ -371,9 +371,9 @@ class ConceptDeleteView(CatalogDeleteView):
     success_url = reverse_lazy('payroll:concept_list')
 
 
-# ---------------------------------------------------------------------------
+
 # Empleados
-# ---------------------------------------------------------------------------
+
 
 class EmployeeListView(PayrollAdminMixin, ListView):
     model = Employee
@@ -487,9 +487,9 @@ class EmployeeDeleteView(PayrollAdminMixin, DeleteView):
         return super().form_valid(form)
 
 
-# ---------------------------------------------------------------------------
+
 # Periodos y liquidación
-# ---------------------------------------------------------------------------
+
 
 class PeriodListView(PayrollAdminMixin, ListView):
     model = PayrollPeriod

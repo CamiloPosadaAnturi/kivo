@@ -2702,3 +2702,164 @@ class DeploymentSettingsTests(TestCase):
         self.assertIn('exec "$@"', guion)
         # Y se planta si la base nunca responde, en vez de arrancar a medias
         self.assertIn('exit 1', guion)
+
+
+class HelpCenterTests(TestCase):
+    """El centro de ayuda: que esté, que explique lo real y que no se filtre."""
+
+    def setUp(self):
+        self.company = Company.objects.create(name='ACME SAS')
+        self.business = Business.objects.create(company=self.company, name='Tienda Centro')
+        self.admin = User.objects.create_user(
+            username='admin1', password='clave12345', role='admin',
+            company=self.company, business=self.business)
+        self.empleado = User.objects.create_user(
+            username='emp1', password='clave12345', role='employee',
+            company=self.company, business=self.business)
+        self.dueno_kivo = User.objects.create_superuser(
+            username='camilo', password='clave12345', email='camilo@kivo.com')
+
+    # -- acceso -------------------------------------------------------------
+
+    def test_the_page_answers_for_anyone_logged_in(self):
+        for usuario in ('admin1', 'emp1'):
+            with self.subTest(usuario=usuario):
+                self.client.login(username=usuario, password='clave12345')
+                respuesta = self.client.get(reverse('ayuda'))
+                self.assertEqual(respuesta.status_code, 200)
+                self.assertIn('Centro de ayuda', respuesta.content.decode())
+
+    def test_anonymous_is_sent_to_the_login(self):
+        respuesta = self.client.get(reverse('ayuda'))
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertIn(reverse('login'), respuesta['Location'])
+
+    # -- el botón de la barra ----------------------------------------------
+
+    def test_the_navbar_has_the_button_and_opens_another_tab(self):
+        self.client.login(username='admin1', password='clave12345')
+        html = self.client.get(reverse('dashboard')).content.decode()
+        self.assertIn(reverse('ayuda'), html)
+        self.assertIn('Ayuda', html)
+        # Se abre aparte para no perder lo que se estaba haciendo
+        posicion = html.find(reverse('ayuda'))
+        self.assertIn('target="_blank"', html[posicion:posicion + 200])
+
+    def test_no_template_comment_leaks_into_the_page(self):
+        """
+        Los comentarios {# #} de Django solo valen en UNA línea. Partido en dos
+        se imprime tal cual en la pantalla, y se ve feísimo.
+        """
+        self.client.login(username='admin1', password='clave12345')
+        for ruta in (reverse('dashboard'), reverse('ayuda')):
+            with self.subTest(ruta=ruta):
+                html = self.client.get(ruta).content.decode()
+                self.assertNotIn('{#', html)
+                self.assertNotIn('{%', html)
+
+    def test_the_button_is_there_for_the_employee_too(self):
+        self.client.login(username='emp1', password='clave12345')
+        self.assertIn(reverse('ayuda'),
+                      self.client.get(reverse('dashboard')).content.decode())
+
+    # -- contenido ----------------------------------------------------------
+
+    def test_it_answers_the_everyday_questions(self):
+        self.client.login(username='admin1', password='clave12345')
+        html = self.client.get(reverse('ayuda')).content.decode()
+        for pregunta in ('¿Cómo registro un ingreso?',
+                         '¿Cómo registro un egreso?',
+                         '¿Cómo creo una categoría?',
+                         '¿Cómo agrego una cuenta bancaria?',
+                         '¿Cómo agrego la caja del efectivo?',
+                         '¿Cómo creo un producto?',
+                         '¿Cómo ingreso un proveedor?',
+                         '¿Cómo hago una orden de compra?',
+                         '¿Cómo recibo la mercancía que llegó?'):
+            with self.subTest(pregunta=pregunta):
+                self.assertIn(pregunta, html)
+
+    def test_it_explains_the_rules_that_confuse_people(self):
+        """Las dudas que salen justo cuando la app dice "no".'"""
+        self.client.login(username='admin1', password='clave12345')
+        html = self.client.get(reverse('ayuda')).content.decode()
+        for tema in ('¿Por qué no me deja registrar una salida de plata?',
+                     'El saldo de Kivo no coincide con el del banco',
+                     'Conté el inventario y no cuadra, ¿cómo lo ajusto?',
+                     'Llegó menos de lo que pedí, ¿qué hago?'):
+            with self.subTest(tema=tema):
+                self.assertIn(tema, html)
+
+    def test_every_shortcut_in_the_help_points_somewhere_real(self):
+        """
+        Si un enlace de la ayuda apunta a una ruta que ya no existe, la página
+        reventaría al renderizar. Esto lo comprueba para las tres vistas de rol.
+        """
+        from django.urls import reverse as resolver
+        from core.help import SECCIONES
+
+        for seccion in SECCIONES:
+            for item in seccion['preguntas']:
+                if not item.get('enlace'):
+                    continue
+                nombre = item['enlace'][0]
+                with self.subTest(enlace=nombre):
+                    self.assertTrue(resolver(nombre))
+
+    def test_every_answer_is_a_real_answer(self):
+        """Una respuesta de un solo renglón suelto no le sirve a nadie."""
+        from core.help import SECCIONES
+        for seccion in SECCIONES:
+            self.assertTrue(seccion['preguntas'], f'{seccion["id"]} quedó sin preguntas')
+            self.assertTrue(seccion['resumen'])
+            for item in seccion['preguntas']:
+                with self.subTest(pregunta=item['pregunta']):
+                    self.assertTrue(item['pregunta'].strip())
+                    self.assertGreaterEqual(len(item['pasos']), 2)
+                    for paso in item['pasos']:
+                        self.assertGreater(len(paso.strip()), 20)
+
+    # -- qué ve cada rol ----------------------------------------------------
+
+    def test_payroll_help_is_only_for_the_business_admin(self):
+        self.client.login(username='admin1', password='clave12345')
+        self.assertIn('¿Cómo agrego un empleado?',
+                      self.client.get(reverse('ayuda')).content.decode())
+
+        self.client.login(username='emp1', password='clave12345')
+        html = self.client.get(reverse('ayuda')).content.decode()
+        self.assertNotIn('¿Cómo agrego un empleado?', html)
+        self.assertNotIn('prestaciones sociales', html)
+
+    def test_billing_help_is_only_for_the_kivo_owner(self):
+        self.client.login(username='camilo', password='clave12345')
+        self.assertIn('¿Cómo registro que un cliente pagó?',
+                      self.client.get(reverse('ayuda')).content.decode())
+
+        self.client.login(username='admin1', password='clave12345')
+        self.assertNotIn('¿Cómo registro que un cliente pagó?',
+                         self.client.get(reverse('ayuda')).content.decode())
+
+    def test_the_sections_shown_match_the_ones_counted(self):
+        self.client.login(username='emp1', password='clave12345')
+        respuesta = self.client.get(reverse('ayuda'))
+        secciones = respuesta.context['secciones']
+        self.assertEqual(
+            respuesta.context['total_preguntas'],
+            sum(len(s['preguntas']) for s in secciones))
+        self.assertNotIn('nomina', [s['id'] for s in secciones])
+
+    def test_a_blocked_company_does_not_get_the_help_either(self):
+        """Suspendido es suspendido: el cartel de pago es lo único que se ve."""
+        from billing.models import Plan
+        from billing.services import generar_cuotas
+        hoy = timezone.localdate()
+        plan = Plan.objects.create(
+            company=self.company, amount=Decimal('80000'), billing_day=hoy.day,
+            grace_days=5, starts_on=hoy - timedelta(days=90))
+        generar_cuotas(plan)
+
+        self.client.login(username='admin1', password='clave12345')
+        respuesta = self.client.get(reverse('ayuda'))
+        self.assertEqual(respuesta.status_code, 302)
+        self.assertEqual(respuesta['Location'], reverse('billing:suspended'))

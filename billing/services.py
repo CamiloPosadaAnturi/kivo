@@ -131,11 +131,7 @@ def anular_cuota(invoice, motivo=''):
     invoice.save(update_fields=['status', 'notes'])
     return invoice
 
-
-# ---------------------------------------------------------------------------
 # Acceso
-# ---------------------------------------------------------------------------
-
 def estado_de_acceso(user):
     """
     Mira si el usuario puede seguir usando Kivo.
